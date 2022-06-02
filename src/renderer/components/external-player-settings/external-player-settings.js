@@ -24,7 +24,14 @@ export default Vue.extend({
     },
 
     externalPlayerNames: function () {
-      return this.$store.getters.getExternalPlayerNames.map((value) => this.$t(value))
+      const fallbackNames = this.$store.getters.getExternalPlayerNames
+      const nameTranslationKeys = this.$store.getters.getExternalPlayerNameTranslationKeys
+
+      return nameTranslationKeys.map((translationKey, idx) => {
+        if (this.$te(translationKey)) { return this.$t(translationKey) }
+
+        return fallbackNames[idx]
+      })
     },
     externalPlayerValues: function () {
       return this.$store.getters.getExternalPlayerValues
