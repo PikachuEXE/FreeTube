@@ -102,6 +102,10 @@ export default defineComponent({
       return this.$store.getters.getHideVideoViews
     },
 
+    showPlaylists: function () {
+      return !this.$store.getters.getHidePlaylists
+    },
+
     selectedUserPlaylist: function () {
       return this.$store.getters.getPlaylist(this.id)
     },
