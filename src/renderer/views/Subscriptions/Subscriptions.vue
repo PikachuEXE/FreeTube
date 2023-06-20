@@ -26,7 +26,44 @@
       </div>
       <h3>{{ $t("Subscriptions.Subscriptions") }}</h3>
       <ft-flex-box
-        v-if="activeVideoList.length === 0"
+        v-if="!rssFeedDisplayed"
+        class="subscriptionTabs"
+        role="tablist"
+        :aria-label="'Subscription Tabs'"
+      >
+        <div
+          ref="defaultTab"
+          class="tab"
+          role="tab"
+          :aria-selected="String(currentTabId === 'default')"
+          aria-controls="tabPanel"
+          :tabindex="currentTabId === 'default' ? 0 : -1"
+          :class="{ selectedTab: currentTabId === 'default' }"
+          @click="changeTab('default')"
+          @keydown.space.enter.prevent="changeTab('default')"
+          @keydown.left="focusTab($event, 'liveStreams')"
+          @keydown.right="focusTab($event, 'liveStreams')"
+        >
+          {{ 'Videos' }}
+        </div>
+        <div
+          ref="liveStreamsTab"
+          class="tab"
+          role="tab"
+          :aria-selected="String(currentTabId === 'liveStreams')"
+          aria-controls="tabPanel"
+          :tabindex="currentTabId === 'liveStreams' ? 0 : -1"
+          :class="{ selectedTab: currentTabId === 'liveStreams' }"
+          @click="changeTab('liveStreams')"
+          @keydown.space.enter.prevent="changeTab('liveStreams')"
+          @keydown.left="focusTab($event, 'default')"
+          @keydown.right="focusTab($event, 'default')"
+        >
+          {{ 'Lives' }}
+        </div>
+      </ft-flex-box>
+      <ft-flex-box
+        v-if="activeFeedEntryList.length === 0"
       >
         <p
           v-if="activeSubscriptionList.length === 0"
@@ -49,11 +86,13 @@
       </ft-flex-box>
       <ft-element-list
         v-else
-        :data="activeVideoList"
+        id="tabPanel"
+        role="tabpanel"
+        :data="activeFeedEntryList"
       />
       <ft-flex-box>
         <ft-button
-          v-if="videoList.length > dataLimit"
+          v-if="activeFeedEntryList.length > dataLimit"
           :label="$t('Subscriptions.Load More Videos')"
           background-color="var(--primary-color)"
           text-color="var(--text-with-main-color)"
@@ -68,7 +107,7 @@
       :title="$t('Subscriptions.Refresh Subscriptions')"
       :size="12"
       theme="primary"
-      @click="loadVideosForSubscriptionsFromRemote"
+      @click="loadFeedEntriesForSubscriptionsFromRemote"
     />
   </div>
 </template>

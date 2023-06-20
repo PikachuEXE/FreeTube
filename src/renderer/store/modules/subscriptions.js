@@ -1,5 +1,7 @@
 const defaultCacheEntryValueForForOneChannel = {
   videos: null,
+  liveStreams: null,
+  rssFeedEntries: null,
 }
 
 function deepCopy(obj) {
@@ -27,10 +29,12 @@ const actions = {
 }
 
 const mutations = {
-  updateSubscriptionsCacheForOneChannel(state, { channelId, videos }) {
+  updateSubscriptionsCacheForOneChannel(state, { channelId, videos, liveStreams, rssFeedEntries }) {
     const existingObject = state.subscriptionsCachePerChannel[channelId]
     const newObject = existingObject != null ? existingObject : deepCopy(defaultCacheEntryValueForForOneChannel)
     if (videos != null) { newObject.videos = videos }
+    if (liveStreams != null) { newObject.liveStreams = liveStreams }
+    if (rssFeedEntries != null) { newObject.rssFeedEntries = rssFeedEntries }
     state.subscriptionsCachePerChannel[channelId] = newObject
   },
   clearSubscriptionsCachePerChannel(state) {

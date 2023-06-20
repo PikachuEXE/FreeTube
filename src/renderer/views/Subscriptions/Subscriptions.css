@@ -14,6 +14,35 @@
   right: 10px;
 }
 
+.subscriptionTabs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: -3px;
+  color: var(--tertiary-text-color);
+  margin-bottom: 10px;
+}
+
+.selectedTab {
+  border-bottom: 3px solid var(--primary-color);
+  color: var(--primary-text-color);
+  font-weight: bold;
+  box-sizing: border-box;
+  margin-bottom: -3px;
+}
+
+.tab {
+  text-align: center;
+  padding: 15px;
+  font-size: 15px;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.tab:hover {
+  font-weight: bold;
+}
+
 .channelBubble {
   display: inline-block;
 }

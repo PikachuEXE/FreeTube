@@ -61,6 +61,42 @@ export async function invidiousGetChannelId(url) {
   }
 }
 
+/**
+ * @param {string} channelId
+ */
+export async function invidiousGetChannelVideos(channelId) {
+  try {
+    const jsonResponse = await invidiousAPICall({
+      resource: 'channels',
+      id: channelId,
+      subResource: 'videos',
+    })
+    // Sometimes `channel`, 'category' entries are mixed in the result
+    return jsonResponse.videos.filter(e => e.type === 'video')
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
+/**
+ * @param {string} channelId
+ */
+export async function invidiousGetChannelLiveStreams(channelId) {
+  try {
+    const jsonResponse = await invidiousAPICall({
+      resource: 'channels',
+      id: channelId,
+      subResource: 'streams',
+    })
+    // Sometimes `channel`, 'category' entries are mixed in the result
+    return jsonResponse.videos.filter(e => e.type === 'video')
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
+
 export async function invidiousGetChannelInfo(channelId) {
   return await invidiousAPICall({
     resource: 'channels',

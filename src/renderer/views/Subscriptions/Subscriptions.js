@@ -9,8 +9,14 @@ import FtElementList from '../../components/ft-element-list/ft-element-list.vue'
 import FtChannelBubble from '../../components/ft-channel-bubble/ft-channel-bubble.vue'
 
 import { calculatePublishedDate, copyToClipboard, showToast } from '../../helpers/utils'
-import { invidiousAPICall } from '../../helpers/api/invidious'
-import { getLocalChannelVideos } from '../../helpers/api/local'
+import {
+  invidiousGetChannelVideos,
+  invidiousGetChannelLiveStreams,
+} from '../../helpers/api/invidious'
+import {
+  getLocalChannelVideos,
+  getLocalChannelLiveStreams,
+} from '../../helpers/api/local'
 
 export default defineComponent({
   name: 'Subscriptions',
@@ -28,8 +34,14 @@ export default defineComponent({
       isLoading: false,
       dataLimit: 100,
       videoList: [],
+      liveStreamList: [],
+      rssFeedEntryList: [],
       errorChannels: [],
-      attemptedFetch: false,
+      attemptedFetchForVideos: false,
+      attemptedFetchForLiveStreams: false,
+      attemptedFetchForRssFeedEntries: false,
+      rssFeedDisplayed: false,
+      currentTabId: 'default',
     }
   },
   computed: {
@@ -53,11 +65,50 @@ export default defineComponent({
       return this.$store.getters.getUseRssFeeds
     },
 
-    activeVideoList: function () {
+    activeFeedEntryList() {
+      if (this.rssFeedDisplayed) {
+        return this.activeRssFeedEntryList
+      }
+
+      if (this.currentTabId === 'liveStreams') {
+        return this.activeLiveStreamList
+      } else {
+        // 'default'
+        return this.activeVideoList
+      }
+    },
+    activeRssFeedEntryList() {
+      if (this.rssFeedEntryList.length < this.dataLimit) {
+        return this.rssFeedEntryList
+      } else {
+        return this.rssFeedEntryList.slice(0, this.dataLimit)
+      }
+    },
+    activeVideoList() {
       if (this.videoList.length < this.dataLimit) {
         return this.videoList
       } else {
         return this.videoList.slice(0, this.dataLimit)
+      }
+    },
+    activeLiveStreamList() {
+      if (this.liveStreamList.length < this.dataLimit) {
+        return this.liveStreamList
+      } else {
+        return this.liveStreamList.slice(0, this.dataLimit)
+      }
+    },
+
+    attemptedFetch() {
+      if (this.rssFeedDisplayed) {
+        return this.attemptedFetchForRssFeedEntries
+      }
+
+      if (this.currentTabId === 'liveStreams') {
+        return this.attemptedFetchForLiveStreams
+      } else {
+        // 'default'
+        return this.attemptedFetchForVideos
       }
     },
 
@@ -86,6 +137,22 @@ export default defineComponent({
         return cacheEntry.videos != null
       })
     },
+    liveStreamCacheForAllActiveProfileChannelsPresent() {
+      if (this.cacheEntriesForAllActiveProfileChannels.length === 0) { return false }
+      if (this.cacheEntriesForAllActiveProfileChannels.length < this.activeSubscriptionList.length) { return false }
+
+      return this.cacheEntriesForAllActiveProfileChannels.every((cacheEntry) => {
+        return cacheEntry.liveStreams != null
+      })
+    },
+    rssFeedEntryCacheForAllActiveProfileChannelsPresent() {
+      if (this.cacheEntriesForAllActiveProfileChannels.length === 0) { return false }
+      if (this.cacheEntriesForAllActiveProfileChannels.length < this.activeSubscriptionList.length) { return false }
+
+      return this.cacheEntriesForAllActiveProfileChannels.every((cacheEntry) => {
+        return cacheEntry.rssFeedEntries != null
+      })
+    },
 
     historyCache: function () {
       return this.$store.getters.getHistoryCache
@@ -110,10 +177,24 @@ export default defineComponent({
   watch: {
     activeProfile: async function (_) {
       this.isLoading = true
-      this.loadVideosFromCacheSometimes()
+      this.rssFeedDisplayed = this.useRssFeeds
+      this.loadFeedFromCacheSometimes()
+    },
+    useRssFeeds(value) {
+      this.rssFeedDisplayed = value
+    },
+    currentTabId(value) {
+      // Save last used tab, restore when view mounted again
+      sessionStorage.setItem('Subscriptions/currentTabId', value)
     },
   },
   mounted: async function () {
+    this.rssFeedDisplayed = this.useRssFeeds
+
+    // Restore currentTab
+    const lastCurrentTabId = sessionStorage.getItem('Subscriptions/currentTabId')
+    if (lastCurrentTabId != null) { this.currentTabId = lastCurrentTabId }
+
     document.addEventListener('keydown', this.keyboardShortcutHandler)
 
     this.isLoading = true
@@ -122,12 +203,52 @@ export default defineComponent({
       this.dataLimit = dataLimit
     }
 
-    this.loadVideosFromCacheSometimes()
+    this.loadFeedFromCacheSometimes()
   },
   beforeDestroy: function () {
     document.removeEventListener('keydown', this.keyboardShortcutHandler)
   },
   methods: {
+    /**
+     * @param {string} tabId
+     */
+    changeTab(tabId) {
+      this.currentTabId = tabId
+
+      this.loadFeedFromCacheSometimes()
+    },
+
+    /**
+     * @param {KeyboardEvent} event
+     * @param {string} tabId
+     */
+    focusTab: function (event, tabId) {
+      if (event.altKey) { return }
+
+      event.preventDefault()
+      if (tabId === 'liveStreams') {
+        this.$refs.liveStreamsTab.focus()
+      } else {
+        // 'default'
+        this.$refs.defaultTab.focus()
+      }
+      this.$emit('showOutlines')
+    },
+
+    loadFeedFromCacheSometimes() {
+      if (this.rssFeedDisplayed) {
+        this.loadRssFeedEntriesFromCacheSometimes()
+        return
+      }
+
+      if (this.currentTabId === 'liveStreams') {
+        this.loadLiveStreamsFromCacheSometimes()
+      } else {
+        // 'default'
+        this.loadVideosFromCacheSometimes()
+      }
+    },
+
     loadVideosFromCacheSometimes() {
       // This method is called on view visible
       if (this.videoCacheForAllActiveProfileChannelsPresent) {
@@ -137,7 +258,6 @@ export default defineComponent({
 
       this.maybeLoadVideosForSubscriptionsFromRemote()
     },
-
     async loadVideosFromCacheForAllActiveProfileChannels() {
       const videoList = []
       this.activeSubscriptionList.forEach((channel) => {
@@ -149,8 +269,62 @@ export default defineComponent({
       this.isLoading = false
     },
 
+    loadLiveStreamsFromCacheSometimes() {
+      // This method is called on view visible
+      if (this.liveStreamCacheForAllActiveProfileChannelsPresent) {
+        this.loadLiveStreamsFromCacheForAllActiveProfileChannels()
+        return
+      }
+
+      this.maybeLoadLiveStreamsForSubscriptionsFromRemote()
+    },
+    async loadLiveStreamsFromCacheForAllActiveProfileChannels() {
+      const entries = []
+      this.activeSubscriptionList.forEach((channel) => {
+        const channelCacheEntry = this.$store.getters.getSubscriptionsCacheEntriesForOneChannel(channel.id)
+
+        entries.push(...channelCacheEntry.liveStreams)
+      })
+      this.updateLiveStreamListAfterProcessing(entries)
+      this.isLoading = false
+    },
+
+    loadRssFeedEntriesFromCacheSometimes() {
+      // This method is called on view visible
+      if (this.rssFeedEntryCacheForAllActiveProfileChannelsPresent) {
+        this.loadRssFeedEntriesFromCacheForAllActiveProfileChannels()
+        return
+      }
+
+      this.maybeLoadRssFeedEntriesForSubscriptionsFromRemote()
+    },
+    async loadRssFeedEntriesFromCacheForAllActiveProfileChannels() {
+      const entries = []
+      this.activeSubscriptionList.forEach((channel) => {
+        const channelCacheEntry = this.$store.getters.getSubscriptionsCacheEntriesForOneChannel(channel.id)
+
+        entries.push(...channelCacheEntry.rssFeedEntries)
+      })
+      this.updateRssFeedEntryListAfterProcessing(entries)
+      this.isLoading = false
+    },
+
     goToChannel: function (id) {
       this.$router.push({ path: `/channel/${id}` })
+    },
+
+    loadFeedEntriesForSubscriptionsFromRemote: function () {
+      if (this.rssFeedDisplayed) {
+        this.loadRssFeedEntriesForSubscriptionsFromRemote()
+        return
+      }
+
+      if (this.currentTabId === 'liveStreams') {
+        this.loadLiveStreamsForSubscriptionsFromRemote()
+      } else {
+        // 'default'
+        this.loadVideosForSubscriptionsFromRemote()
+      }
     },
 
     loadVideosForSubscriptionsFromRemote: async function () {
@@ -165,33 +339,17 @@ export default defineComponent({
       let channelCount = 0
       this.isLoading = true
 
-      let useRss = this.useRssFeeds
-      if (channelsToLoadFromRemote.length >= 125 && !useRss) {
-        showToast(
-          this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
-          10000
-        )
-        useRss = true
-      }
       this.updateShowProgressBar(true)
       this.setProgressBarPercentage(0)
-      this.attemptedFetch = true
+      this.attemptedFetchForVideos = true
 
       this.errorChannels = []
       const videoListFromRemote = (await Promise.all(channelsToLoadFromRemote.map(async (channel) => {
         let videos = []
         if (!process.env.IS_ELECTRON || this.backendPreference === 'invidious') {
-          if (useRss) {
-            videos = await this.getChannelVideosInvidiousRSS(channel)
-          } else {
-            videos = await this.getChannelVideosInvidiousScraper(channel)
-          }
+          videos = await this.getChannelVideosInvidiousScraper(channel)
         } else {
-          if (useRss) {
-            videos = await this.getChannelVideosLocalRSS(channel)
-          } else {
-            videos = await this.getChannelVideosLocalScraper(channel)
-          }
+          videos = await this.getChannelVideosLocalScraper(channel)
         }
 
         channelCount++
@@ -210,18 +368,109 @@ export default defineComponent({
       this.updateShowProgressBar(false)
     },
 
+    loadLiveStreamsForSubscriptionsFromRemote: async function () {
+      if (this.activeSubscriptionList.length === 0) {
+        this.isLoading = false
+        this.liveStreamList = []
+        return
+      }
+
+      const channelsToLoadFromRemote = this.activeSubscriptionList
+      const allEntries = []
+      let channelCount = 0
+      this.isLoading = true
+
+      this.updateShowProgressBar(true)
+      this.setProgressBarPercentage(0)
+      this.attemptedFetchForLiveStreams = true
+
+      this.errorChannels = []
+      const entriesFromRemote = (await Promise.all(channelsToLoadFromRemote.map(async (channel) => {
+        let entries = []
+        if (!process.env.IS_ELECTRON || this.backendPreference === 'invidious') {
+          entries = await this.getChannelLiveStreamsInvidiousScraper(channel)
+        } else {
+          entries = await this.getChannelLiveStreamsLocalScraper(channel)
+        }
+
+        channelCount++
+        const percentageComplete = (channelCount / channelsToLoadFromRemote.length) * 100
+        this.setProgressBarPercentage(percentageComplete)
+        this.updateSubscriptionsCacheForOneChannel({
+          channelId: channel.id,
+          liveStreams: entries,
+        })
+        return entries
+      }))).flatMap((o) => o)
+      allEntries.push(...entriesFromRemote)
+
+      this.updateLiveStreamListAfterProcessing(allEntries)
+      this.isLoading = false
+      this.updateShowProgressBar(false)
+    },
+
+    loadRssFeedEntriesForSubscriptionsFromRemote: async function () {
+      if (this.activeSubscriptionList.length === 0) {
+        this.isLoading = false
+        this.rssFeedEntryList = []
+        return
+      }
+
+      const channelsToLoadFromRemote = this.activeSubscriptionList
+      const allEntries = []
+      let channelCount = 0
+      this.isLoading = true
+
+      this.updateShowProgressBar(true)
+      this.setProgressBarPercentage(0)
+      this.attemptedFetchForLiveStreams = true
+
+      this.errorChannels = []
+      const entriesFromRemote = (await Promise.all(channelsToLoadFromRemote.map(async (channel) => {
+        let entries = []
+        if (!process.env.IS_ELECTRON || this.backendPreference === 'invidious') {
+          entries = await this.getChannelLiveStreamsInvidiousRSS(channel)
+        } else {
+          entries = await this.getChannelLiveStreamsLocalRSS(channel)
+        }
+
+        channelCount++
+        const percentageComplete = (channelCount / channelsToLoadFromRemote.length) * 100
+        this.setProgressBarPercentage(percentageComplete)
+        this.updateSubscriptionsCacheForOneChannel({
+          channelId: channel.id,
+          rssFeedEntries: entries,
+        })
+        return entries
+      }))).flatMap((o) => o)
+      allEntries.push(...entriesFromRemote)
+
+      this.updateRssFeedEntryListAfterProcessing(allEntries)
+      this.isLoading = false
+      this.updateShowProgressBar(false)
+    },
+
     updateVideoListAfterProcessing(videoList) {
+      this.videoList = this.processFeedEntries(videoList)
+    },
+    updateLiveStreamListAfterProcessing(liveStreamList) {
+      this.liveStreamList = this.processFeedEntries(liveStreamList)
+    },
+    updateRssFeedEntryListAfterProcessing(rssFeedEntryList) {
+      this.rssFeedEntryList = this.processFeedEntries(rssFeedEntryList)
+    },
+    processFeedEntries(entries) {
       // Filtering and sorting based in preference
-      videoList.sort((a, b) => {
+      entries.sort((a, b) => {
         return b.publishedDate - a.publishedDate
       })
       if (this.hideLiveStreams) {
-        videoList = videoList.filter(item => {
+        entries = entries.filter(item => {
           return (!item.liveNow && !item.isUpcoming)
         })
       }
       if (this.hideUpcomingPremieres) {
-        videoList = videoList.filter(item => {
+        entries = entries.filter(item => {
           if (item.isRSS) {
             // viewCount is our only method of detecting premieres in RSS
             // data without sending an additional request.
@@ -233,7 +482,7 @@ export default defineComponent({
         })
       }
 
-      this.videoList = videoList.filter((video) => {
+      return entries.filter((video) => {
         if (this.hideWatchedSubs) {
           const historyIndex = this.historyCache.findIndex((x) => {
             return x.videoId === video.videoId
@@ -252,7 +501,7 @@ export default defineComponent({
         await this.loadVideosForSubscriptionsFromRemote()
       } else {
         this.videoList = []
-        this.attemptedFetch = false
+        this.attemptedFetchForVideos = false
         this.isLoading = false
       }
     },
@@ -286,16 +535,12 @@ export default defineComponent({
         })
         switch (failedAttempts) {
           case 0:
-            return await this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
-          case 1:
             if (this.backendFallback) {
               showToast(this.$t('Falling back to Invidious API'))
               return await this.getChannelVideosInvidiousScraper(channel, failedAttempts + 1)
             } else {
               return []
             }
-          case 2:
-            return await this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
           default:
             return []
         }
@@ -322,16 +567,12 @@ export default defineComponent({
         })
         switch (failedAttempts) {
           case 0:
-            return this.getChannelVideosLocalScraper(channel, failedAttempts + 1)
-          case 1:
             if (this.backendFallback) {
               showToast(this.$t('Falling back to Invidious API'))
               return this.getChannelVideosInvidiousRSS(channel, failedAttempts + 1)
             } else {
               return []
             }
-          case 2:
-            return this.getChannelVideosLocalScraper(channel, failedAttempts + 1)
           default:
             return []
         }
@@ -340,14 +581,8 @@ export default defineComponent({
 
     getChannelVideosInvidiousScraper: function (channel, failedAttempts = 0) {
       return new Promise((resolve, reject) => {
-        const subscriptionsPayload = {
-          resource: 'channels/latest',
-          id: channel.id,
-          params: {}
-        }
-
-        invidiousAPICall(subscriptionsPayload).then(async (result) => {
-          resolve(await Promise.all(result.videos.map((video) => {
+        invidiousGetChannelVideos(channel.id).then(async (result) => {
+          resolve(await Promise.all(result.map((video) => {
             if (video.liveNow) {
               video.publishedDate = new Date().getTime()
             } else if (video.isUpcoming) {
@@ -365,18 +600,12 @@ export default defineComponent({
           })
           switch (failedAttempts) {
             case 0:
-              resolve(this.getChannelVideosInvidiousRSS(channel, failedAttempts + 1))
-              break
-            case 1:
               if (process.env.IS_ELECTRON && this.backendFallback) {
                 showToast(this.$t('Falling back to the local API'))
                 resolve(this.getChannelVideosLocalScraper(channel, failedAttempts + 1))
               } else {
                 resolve([])
               }
-              break
-            case 2:
-              resolve(this.getChannelVideosInvidiousRSS(channel, failedAttempts + 1))
               break
             default:
               resolve([])
@@ -405,16 +634,174 @@ export default defineComponent({
         })
         switch (failedAttempts) {
           case 0:
-            return this.getChannelVideosInvidiousScraper(channel, failedAttempts + 1)
-          case 1:
             if (process.env.IS_ELECTRON && this.backendFallback) {
               showToast(this.$t('Falling back to the local API'))
               return this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
             } else {
               return []
             }
-          case 2:
-            return this.getChannelVideosInvidiousScraper(channel, failedAttempts + 1)
+          default:
+            return []
+        }
+      }
+    },
+
+    maybeLoadLiveStreamsForSubscriptionsFromRemote: async function () {
+      if (this.fetchSubscriptionsAutomatically) {
+        // `this.isLoading = false` is called inside `loadVideosForSubscriptionsFromRemote` when needed
+        await this.loadLiveStreamsForSubscriptionsFromRemote()
+      } else {
+        this.liveStreamList = []
+        this.attemptedFetchForLiveStreams = false
+        this.isLoading = false
+      }
+    },
+
+    maybeLoadRssFeedEntriesForSubscriptionsFromRemote: async function () {
+      if (this.fetchSubscriptionsAutomatically) {
+        // `this.isLoading = false` is called inside `loadVideosForSubscriptionsFromRemote` when needed
+        await this.loadRssFeedEntriesForSubscriptionsFromRemote()
+      } else {
+        this.rssFeedEntryList = []
+        this.attemptedFetchForRssFeedEntries = false
+        this.isLoading = false
+      }
+    },
+
+    getChannelLiveStreamsLocalScraper: async function (channel, failedAttempts = 0) {
+      try {
+        const entries = await getLocalChannelLiveStreams(channel.id)
+
+        if (entries === null) {
+          this.errorChannels.push(channel)
+          return []
+        }
+
+        entries.map(entry => {
+          if (entry.liveNow) {
+            entry.publishedDate = new Date().getTime()
+          } else if (entry.isUpcoming) {
+            entry.publishedDate = entry.premiereDate
+          } else {
+            entry.publishedDate = calculatePublishedDate(entry.publishedText)
+          }
+          return entry
+        })
+
+        return entries
+      } catch (err) {
+        console.error(err)
+        const errorMessage = this.$t('Local API Error (Click to copy)')
+        showToast(`${errorMessage}: ${err}`, 10000, () => {
+          copyToClipboard(err)
+        })
+        switch (failedAttempts) {
+          case 0:
+            if (this.backendFallback) {
+              showToast(this.$t('Falling back to Invidious API'))
+              return await this.getChannelLiveStreamsInvidiousScraper(channel, failedAttempts + 1)
+            } else {
+              return []
+            }
+          default:
+            return []
+        }
+      }
+    },
+
+    getChannelLiveStreamsLocalRSS: async function (channel, failedAttempts = 0) {
+      const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}`
+
+      try {
+        const response = await fetch(feedUrl)
+
+        if (response.status === 404) {
+          this.errorChannels.push(channel)
+          return []
+        }
+
+        return await this.parseYouTubeRSSFeed(await response.text(), channel.id)
+      } catch (error) {
+        console.error(error)
+        const errorMessage = this.$t('Local API Error (Click to copy)')
+        showToast(`${errorMessage}: ${error}`, 10000, () => {
+          copyToClipboard(error)
+        })
+        switch (failedAttempts) {
+          case 0:
+            if (this.backendFallback) {
+              showToast(this.$t('Falling back to Invidious API'))
+              return this.getChannelLiveStreamsInvidiousRSS(channel, failedAttempts + 1)
+            } else {
+              return []
+            }
+          default:
+            return []
+        }
+      }
+    },
+
+    getChannelLiveStreamsInvidiousScraper: function (channel, failedAttempts = 0) {
+      return new Promise((resolve, reject) => {
+        invidiousGetChannelLiveStreams(channel.id).then(async (result) => {
+          resolve(await Promise.all(result.map((video) => {
+            if (video.liveNow) {
+              video.publishedDate = new Date().getTime()
+            } else if (video.isUpcoming) {
+              video.publishedDate = new Date(video.premiereTimestamp * 1000)
+            } else {
+              video.publishedDate = new Date(video.published * 1000)
+            }
+            return video
+          })))
+        }).catch((err) => {
+          console.error(err)
+          const errorMessage = this.$t('Invidious API Error (Click to copy)')
+          showToast(`${errorMessage}: ${err.responseText}`, 10000, () => {
+            copyToClipboard(err.responseText)
+          })
+          switch (failedAttempts) {
+            case 0:
+              if (process.env.IS_ELECTRON && this.backendFallback) {
+                showToast(this.$t('Falling back to the local API'))
+                resolve(this.getChannelLiveStreamsLocalScraper(channel, failedAttempts + 1))
+              } else {
+                resolve([])
+              }
+              break
+            default:
+              resolve([])
+          }
+        })
+      })
+    },
+
+    getChannelLiveStreamsInvidiousRSS: async function (channel, failedAttempts = 0) {
+      const feedUrl = `${this.currentInvidiousInstance}/feed/channel/${channel.id}`
+
+      try {
+        const response = await fetch(feedUrl)
+
+        if (response.status === 500) {
+          this.errorChannels.push(channel)
+          return []
+        }
+
+        return await this.parseYouTubeRSSFeed(await response.text(), channel.id)
+      } catch (error) {
+        console.error(error)
+        const errorMessage = this.$t('Invidious API Error (Click to copy)')
+        showToast(`${errorMessage}: ${error}`, 10000, () => {
+          copyToClipboard(error)
+        })
+        switch (failedAttempts) {
+          case 0:
+            if (process.env.IS_ELECTRON && this.backendFallback) {
+              showToast(this.$t('Falling back to the local API'))
+              return this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
+            } else {
+              return []
+            }
           default:
             return []
         }
@@ -474,7 +861,7 @@ export default defineComponent({
         case 'r':
         case 'R':
           if (!this.isLoading) {
-            this.loadVideosForSubscriptionsFromRemote()
+            this.loadFeedEntriesForSubscriptionsFromRemote()
           }
           break
       }
