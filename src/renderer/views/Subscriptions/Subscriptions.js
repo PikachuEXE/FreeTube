@@ -64,6 +64,12 @@ export default defineComponent({
     useRssFeeds: function () {
       return this.$store.getters.getUseRssFeeds
     },
+    shouldForceRssFeed() {
+      // When preference set to use RSS it does not count as "forcing"
+      if (this.useRssFeeds) { return false }
+
+      return this.activeSubscriptionList.length >= 125
+    },
 
     activeFeedEntryList() {
       if (this.rssFeedDisplayed) {
@@ -187,9 +193,19 @@ export default defineComponent({
       // Save last used tab, restore when view mounted again
       sessionStorage.setItem('Subscriptions/currentTabId', value)
     },
+    rssFeedDisplayed(value) {
+      // To be restored when view mounted again
+      sessionStorage.setItem('Subscriptions/rssFeedDisplayed', value)
+    },
   },
   mounted: async function () {
-    this.rssFeedDisplayed = this.useRssFeeds
+    // Restore rssFeedDisplayed
+    const lastRssFeedDisplayed = sessionStorage.getItem('Subscriptions/rssFeedDisplayed')
+    if (lastRssFeedDisplayed != null) {
+      this.rssFeedDisplayed = lastRssFeedDisplayed
+    } else {
+      this.rssFeedDisplayed = this.useRssFeeds
+    }
 
     // Restore currentTab
     const lastCurrentTabId = sessionStorage.getItem('Subscriptions/currentTabId')
@@ -339,6 +355,15 @@ export default defineComponent({
       let channelCount = 0
       this.isLoading = true
 
+      if (this.shouldForceRssFeed) {
+        showToast(
+          this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
+          10000
+        )
+        this.rssFeedDisplayed = true
+        this.loadRssFeedEntriesForSubscriptionsFromRemote()
+        return
+      }
       this.updateShowProgressBar(true)
       this.setProgressBarPercentage(0)
       this.attemptedFetchForVideos = true
@@ -380,6 +405,15 @@ export default defineComponent({
       let channelCount = 0
       this.isLoading = true
 
+      if (this.shouldForceRssFeed) {
+        showToast(
+          this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
+          10000
+        )
+        this.rssFeedDisplayed = true
+        this.loadRssFeedEntriesForSubscriptionsFromRemote()
+        return
+      }
       this.updateShowProgressBar(true)
       this.setProgressBarPercentage(0)
       this.attemptedFetchForLiveStreams = true
@@ -429,9 +463,9 @@ export default defineComponent({
       const entriesFromRemote = (await Promise.all(channelsToLoadFromRemote.map(async (channel) => {
         let entries = []
         if (!process.env.IS_ELECTRON || this.backendPreference === 'invidious') {
-          entries = await this.getChannelLiveStreamsInvidiousRSS(channel)
+          entries = await this.getChannelRssEntriesInvidious(channel)
         } else {
-          entries = await this.getChannelLiveStreamsLocalRSS(channel)
+          entries = await this.getChannelRssEntriesLocal(channel)
         }
 
         channelCount++
@@ -547,7 +581,7 @@ export default defineComponent({
       }
     },
 
-    getChannelVideosLocalRSS: async function (channel, failedAttempts = 0) {
+    getChannelRssEntriesLocal: async function (channel, failedAttempts = 0) {
       const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}`
 
       try {
@@ -569,7 +603,7 @@ export default defineComponent({
           case 0:
             if (this.backendFallback) {
               showToast(this.$t('Falling back to Invidious API'))
-              return this.getChannelVideosInvidiousRSS(channel, failedAttempts + 1)
+              return this.getChannelRssEntriesInvidious(channel, failedAttempts + 1)
             } else {
               return []
             }
@@ -614,7 +648,7 @@ export default defineComponent({
       })
     },
 
-    getChannelVideosInvidiousRSS: async function (channel, failedAttempts = 0) {
+    getChannelRssEntriesInvidious: async function (channel, failedAttempts = 0) {
       const feedUrl = `${this.currentInvidiousInstance}/feed/channel/${channel.id}`
 
       try {
@@ -636,7 +670,7 @@ export default defineComponent({
           case 0:
             if (process.env.IS_ELECTRON && this.backendFallback) {
               showToast(this.$t('Falling back to the local API'))
-              return this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
+              return this.getChannelRssEntriesLocal(channel, failedAttempts + 1)
             } else {
               return []
             }
@@ -709,38 +743,6 @@ export default defineComponent({
       }
     },
 
-    getChannelLiveStreamsLocalRSS: async function (channel, failedAttempts = 0) {
-      const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channel.id}`
-
-      try {
-        const response = await fetch(feedUrl)
-
-        if (response.status === 404) {
-          this.errorChannels.push(channel)
-          return []
-        }
-
-        return await this.parseYouTubeRSSFeed(await response.text(), channel.id)
-      } catch (error) {
-        console.error(error)
-        const errorMessage = this.$t('Local API Error (Click to copy)')
-        showToast(`${errorMessage}: ${error}`, 10000, () => {
-          copyToClipboard(error)
-        })
-        switch (failedAttempts) {
-          case 0:
-            if (this.backendFallback) {
-              showToast(this.$t('Falling back to Invidious API'))
-              return this.getChannelLiveStreamsInvidiousRSS(channel, failedAttempts + 1)
-            } else {
-              return []
-            }
-          default:
-            return []
-        }
-      }
-    },
-
     getChannelLiveStreamsInvidiousScraper: function (channel, failedAttempts = 0) {
       return new Promise((resolve, reject) => {
         invidiousGetChannelLiveStreams(channel.id).then(async (result) => {
@@ -774,38 +776,6 @@ export default defineComponent({
           }
         })
       })
-    },
-
-    getChannelLiveStreamsInvidiousRSS: async function (channel, failedAttempts = 0) {
-      const feedUrl = `${this.currentInvidiousInstance}/feed/channel/${channel.id}`
-
-      try {
-        const response = await fetch(feedUrl)
-
-        if (response.status === 500) {
-          this.errorChannels.push(channel)
-          return []
-        }
-
-        return await this.parseYouTubeRSSFeed(await response.text(), channel.id)
-      } catch (error) {
-        console.error(error)
-        const errorMessage = this.$t('Invidious API Error (Click to copy)')
-        showToast(`${errorMessage}: ${error}`, 10000, () => {
-          copyToClipboard(error)
-        })
-        switch (failedAttempts) {
-          case 0:
-            if (process.env.IS_ELECTRON && this.backendFallback) {
-              showToast(this.$t('Falling back to the local API'))
-              return this.getChannelVideosLocalRSS(channel, failedAttempts + 1)
-            } else {
-              return []
-            }
-          default:
-            return []
-        }
-      }
     },
 
     async parseYouTubeRSSFeed(rssString, channelId) {
