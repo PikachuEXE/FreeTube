@@ -363,12 +363,7 @@ export default defineComponent({
       this.isLoading = true
 
       if (this.shouldForceRssFeed) {
-        showToast(
-          this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
-          10000
-        )
-        this.rssFeedDisplayed = true
-        this.loadRssFeedEntriesForSubscriptionsFromRemote()
+        this.forceLoadRssFeedEntriesForSubscriptionsFromRemote()
         return
       }
       this.updateShowProgressBar(true)
@@ -413,12 +408,7 @@ export default defineComponent({
       this.isLoading = true
 
       if (this.shouldForceRssFeed) {
-        showToast(
-          this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
-          10000
-        )
-        this.rssFeedDisplayed = true
-        this.loadRssFeedEntriesForSubscriptionsFromRemote()
+        this.forceLoadRssFeedEntriesForSubscriptionsFromRemote()
         return
       }
       this.updateShowProgressBar(true)
@@ -448,6 +438,15 @@ export default defineComponent({
       this.updateLiveStreamListAfterProcessing(allEntries)
       this.isLoading = false
       this.updateShowProgressBar(false)
+    },
+
+    forceLoadRssFeedEntriesForSubscriptionsFromRemote() {
+      showToast(
+        this.$t('Subscriptions["This profile has a large number of subscriptions. Forcing RSS to avoid rate limiting"]'),
+        10000
+      )
+      this.rssFeedDisplayed = true
+      this.loadRssFeedEntriesForSubscriptionsFromRemote()
     },
 
     loadRssFeedEntriesForSubscriptionsFromRemote: async function () {
