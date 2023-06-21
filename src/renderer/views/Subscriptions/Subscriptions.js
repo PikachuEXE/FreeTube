@@ -179,6 +179,13 @@ export default defineComponent({
     fetchSubscriptionsAutomatically: function() {
       return this.$store.getters.getFetchSubscriptionsAutomatically
     },
+
+    headingText() {
+      const defaultText = this.$t('Subscriptions.Subscriptions')
+      if (!this.rssFeedDisplayed) { return defaultText }
+
+      return `${defaultText} (RSS)`
+    },
   },
   watch: {
     activeProfile: async function (_) {

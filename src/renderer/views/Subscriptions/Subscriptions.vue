@@ -24,7 +24,7 @@
           />
         </div>
       </div>
-      <h3>{{ $t("Subscriptions.Subscriptions") }}</h3>
+      <h3>{{ headingText }}</h3>
       <ft-flex-box
         v-if="!rssFeedDisplayed"
         class="subscriptionTabs"
