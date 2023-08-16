@@ -17,10 +17,9 @@ export default defineComponent({
   },
   data: function () {
     return {
-      thumbnailDisplayModeValues: [
-        'default',
+      thumbnailDisplayModeNonDefaultValues: [
+        'blurred',
         'hidden',
-        'blurred'
       ]
     }
   },
@@ -106,11 +105,13 @@ export default defineComponent({
     thumbnailDisplayMode: function () {
       return this.$store.getters.getThumbnailDisplayMode
     },
+    thumbnailDisplayModeIsNonDefault: function () {
+      return this.thumbnailDisplayMode !== 'default'
+    },
     thumbnailDisplayModeNames: function () {
       return [
-        this.$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Default'),
+        this.$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Blurred'),
         this.$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Hidden'),
-        this.$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Blurred')
       ]
     },
     channelsHidden: function () {
@@ -134,6 +135,13 @@ export default defineComponent({
     },
     handleChannelsHidden: function(value) {
       this.updateChannelsHidden(JSON.stringify(value))
+    },
+    toggleThumbnailAltering: function(value) {
+      if (value) {
+        this.updateThumbnailDisplayMode(this.thumbnailDisplayModeNonDefaultValues[0])
+      } else {
+        this.updateThumbnailDisplayMode('default')
+      }
     },
 
     ...mapActions([

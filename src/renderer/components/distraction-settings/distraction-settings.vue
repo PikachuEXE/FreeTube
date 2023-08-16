@@ -193,13 +193,6 @@
           :default-value="hideSharingActions"
           @change="updateHideSharingActions"
         />
-        <ft-select
-          :placeholder="$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Thumbnail Display Mode')"
-          :value="thumbnailDisplayMode"
-          :select-names="thumbnailDisplayModeNames"
-          :select-values="thumbnailDisplayModeValues"
-          @change="updateThumbnailDisplayMode"
-        />
       </div>
       <div class="switchColumn">
         <ft-toggle-switch
@@ -221,6 +214,28 @@
           @change="updateShowDistractionFreeTitles"
         />
       </div>
+    </div>
+    <ft-flex-box>
+      <ft-toggle-switch
+        :label="$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Enable Thumbnail Altering')"
+        :compact="false"
+        :default-value="thumbnailDisplayModeIsNonDefault"
+        @change="toggleThumbnailAltering"
+      />
+    </ft-flex-box>
+    <div
+      v-if="thumbnailDisplayModeIsNonDefault"
+    >
+      <ft-flex-box>
+        <ft-select
+          v-if="thumbnailDisplayModeIsNonDefault"
+          :placeholder="$t('Settings.Distraction Free Settings.Thumbnail Display Mode.Thumbnail Display Mode')"
+          :value="thumbnailDisplayMode"
+          :select-names="thumbnailDisplayModeNames"
+          :select-values="thumbnailDisplayModeNonDefaultValues"
+          @change="updateThumbnailDisplayMode"
+        />
+      </ft-flex-box>
     </div>
     <br class="hide-on-mobile">
     <ft-flex-box>
