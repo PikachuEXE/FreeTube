@@ -7,6 +7,7 @@ import {
   formatNumber,
   getRelativeTimeFromDate,
   openExternalLink,
+  openInternalPath,
   showToast,
   toDistractionFreeTitle,
   deepCopy
@@ -460,7 +461,7 @@ export default defineComponent({
       })
     },
     quickBookmarkIconText: function () {
-      if (!this.isQuickBookmarkEnabled) { return false }
+      if (!this.isQuickBookmarkEnabled) { return this.$t('User Playlists.Add to Playlist') }
 
       const translationProperties = {
         playlistName: this.quickBookmarkPlaylist.playlistName,
@@ -766,7 +767,13 @@ export default defineComponent({
 
     toggleQuickBookmarked() {
       if (!this.isQuickBookmarkEnabled) {
-        // This should be prevented by UI
+        showToast(
+          this.$t('Video["Quick Bookmark Disabled. Click Here To Open User Playlists Page To Enable Quick Bookmark"]'),
+          5000,
+          () => {
+            this.createNewWindowInUserPlaylistsView()
+          },
+        )
         return
       }
 
@@ -775,6 +782,13 @@ export default defineComponent({
       } else {
         this.addToQuickBookmarkPlaylist()
       }
+    },
+    createNewWindowInUserPlaylistsView: function () {
+      openInternalPath({
+        path: '/userPlaylists',
+        query: {},
+        doCreateNewWindow: true,
+      })
     },
     addToQuickBookmarkPlaylist() {
       const videoData = {
