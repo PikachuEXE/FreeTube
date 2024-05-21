@@ -4,7 +4,12 @@ import FtCard from '../ft-card/ft-card.vue'
 import FtIconButton from '../ft-icon-button/ft-icon-button.vue'
 import FtShareButton from '../ft-share-button/ft-share-button.vue'
 import FtSubscribeButton from '../ft-subscribe-button/ft-subscribe-button.vue'
-import { formatNumber, openExternalLink, showToast } from '../../helpers/utils'
+import {
+  formatNumber,
+  openExternalLink,
+  openInternalPath,
+  showToast,
+} from '../../helpers/utils'
 
 export default defineComponent({
   name: 'WatchVideoInfo',
@@ -241,7 +246,7 @@ export default defineComponent({
       })
     },
     quickBookmarkIconText: function () {
-      if (!this.isQuickBookmarkEnabled) { return false }
+      if (!this.isQuickBookmarkEnabled) { return this.$t('User Playlists.Add to Playlist') }
 
       const translationProperties = {
         playlistName: this.quickBookmarkPlaylist.playlistName,
@@ -351,7 +356,13 @@ export default defineComponent({
 
     toggleQuickBookmarked() {
       if (!this.isQuickBookmarkEnabled) {
-        // This should be prevented by UI
+        showToast(
+          this.$t('Video["Quick Bookmark Disabled. Click Here To Open User Playlists Page To Enable Quick Bookmark"]'),
+          5000,
+          () => {
+            this.createNewWindowInUserPlaylistsView()
+          },
+        )
         return
       }
 
@@ -360,6 +371,13 @@ export default defineComponent({
       } else {
         this.addToQuickBookmarkPlaylist()
       }
+    },
+    createNewWindowInUserPlaylistsView: function () {
+      openInternalPath({
+        path: '/userPlaylists',
+        query: {},
+        doCreateNewWindow: true,
+      })
     },
     addToQuickBookmarkPlaylist() {
       const videoData = {

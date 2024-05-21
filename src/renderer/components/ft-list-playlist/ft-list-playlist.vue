@@ -74,11 +74,9 @@
         <ft-icon-button
           :title="markedAsQuickBookmarkTarget ? $t('User Playlists.Quick Bookmark Enabled') : $t('User Playlists.Enable Quick Bookmark With This Playlist')"
           :icon="markedAsQuickBookmarkTarget ? ['fas', 'bookmark'] : ['far', 'bookmark']"
-          :disabled="markedAsQuickBookmarkTarget"
           :theme="markedAsQuickBookmarkTarget ? 'secondary' : 'base-no-default'"
           :size="16"
-          @disabled-click="handleQuickBookmarkEnabledDisabledClick"
-          @click="enableQuickBookmarkForThisPlaylist"
+          @click="() => markedAsQuickBookmarkTarget ? disableQuickBookmark() : enableQuickBookmarkForThisPlaylist()"
         />
       </span>
     </div>

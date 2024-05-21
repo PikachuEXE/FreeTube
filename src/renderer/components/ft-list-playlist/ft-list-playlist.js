@@ -124,10 +124,6 @@ export default defineComponent({
       })
     },
 
-    handleQuickBookmarkEnabledDisabledClick: function () {
-      showToast(this.$t('User Playlists.SinglePlaylistView.Toast["This playlist is already being used for quick bookmark."]'))
-    },
-
     parseInvidiousData: function () {
       this.title = this.data.title
       if (this.thumbnailCanBeShown) {
@@ -193,6 +189,10 @@ export default defineComponent({
       } else {
         showToast(this.$t('User Playlists.SinglePlaylistView.Toast.This playlist is now used for quick bookmark'))
       }
+    },
+    disableQuickBookmark() {
+      this.updateQuickBookmarkTargetPlaylistId(null)
+      showToast(this.$t('User Playlists.SinglePlaylistView.Toast.Quick bookmark disabled'))
     },
 
     ...mapActions([
