@@ -13,26 +13,6 @@ function generateRandomUniqueId() {
   return crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 }
 
-/*
-*  Function to find the first playlist with 0 videos, or otherwise the most recently accessed.
-*  This is a good default quick bookmark target if one needs to be set.
-*/
-function findEmptyOrLatestPlayedPlaylist(playlists) {
-  const emptyPlaylist = playlists.find((playlist) => playlist.videos.length === 0)
-  if (emptyPlaylist) return emptyPlaylist
-
-  let max = -1
-  let maxIndex = 0
-  for (let i = 0; i < playlists.length; i++) {
-    if (playlists[i].lastPlayedAt != null && playlists[i].lastPlayedAt > max) {
-      maxIndex = i
-      max = playlists[i].lastPlayedAt
-    }
-  }
-
-  return playlists[maxIndex]
-}
-
 const state = {
   // Playlist loading takes time on app load (new windows)
   // This is necessary to let components to know when to start data loading
@@ -109,11 +89,6 @@ const actions = {
     try {
       await DBPlaylistHandlers.create([payload])
 
-      const noQuickBookmarkSet = !rootState.settings.quickBookmarkTargetPlaylistId || !state.playlists.some((playlist) => playlist._id === rootState.settings.quickBookmarkTargetPlaylistId)
-      if (noQuickBookmarkSet) {
-        dispatch('updateQuickBookmarkTargetPlaylistId', payload._id, { root: true })
-      }
-
       commit('addPlaylist', payload)
     } catch (errMessage) {
       console.error(errMessage)
@@ -123,13 +98,6 @@ const actions = {
   async addPlaylists({ state, commit, rootState, dispatch }, payload) {
     try {
       await DBPlaylistHandlers.create(payload)
-
-      const noQuickBookmarkSet = !rootState.settings.quickBookmarkTargetPlaylistId || !state.playlists.some((playlist) => playlist._id === rootState.settings.quickBookmarkTargetPlaylistId)
-      if (noQuickBookmarkSet) {
-        const chosenPlaylist = findEmptyOrLatestPlayedPlaylist(payload)
-        dispatch('updateQuickBookmarkTargetPlaylistId', chosenPlaylist._id, { root: true })
-      }
-
       commit('addPlaylists', payload)
     } catch (errMessage) {
       console.error(errMessage)
@@ -348,13 +316,6 @@ const actions = {
               DBPlaylistHandlers.create(watchLaterPlaylist)
             }
           }
-        }
-
-        // if no quick bookmark is set, try to find another playlist
-        const noQuickBookmarkSet = !rootState.settings.quickBookmarkTargetPlaylistId || !payload.some((playlist) => playlist._id === rootState.settings.quickBookmarkTargetPlaylistId)
-        if (noQuickBookmarkSet && payload.length > 0) {
-          const chosenPlaylist = findEmptyOrLatestPlayedPlaylist(payload)
-          dispatch('updateQuickBookmarkTargetPlaylistId', chosenPlaylist._id, { root: true })
         }
 
         commit('setAllPlaylists', payload)
