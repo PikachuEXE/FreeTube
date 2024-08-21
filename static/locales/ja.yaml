@@ -123,7 +123,7 @@ Playlists: '再生リスト'
 User Playlists:
   Your Playlists: 'あなたの再生リスト'
   Your saved videos are empty. Click on the save button on the corner of a video to have it listed here: 保存した動画はありません。一覧に表示させるには、ビデオの角にある保存ボタンをクリックします
-  Playlist Message: 
+  Playlist Message:
     このページは完全に機能する再生リストを反映していません。保存した動画やお気に入りの動画のみが表示されます。作業が完了すると、現在ここにあるすべての動画は「Favorites」の再生リストに移行されます。
   Search bar placeholder: 再生リストの検索
   Empty Search Message: この再生リストに、検索に一致する動画はありません
@@ -165,7 +165,7 @@ User Playlists:
       Playlist name cannot be empty. Please input a name.: 再生リストの名前は空白にできません。名前を入力してください.
       Reverted to use {oldPlaylistName} for quick bookmark: クイックブックマークを {oldPlaylistName}
         に戻しました
-      "{videoCount} video(s) have been removed": 1 本の動画を削除しました | {video Count} 本の動画を削除しました
+      "{videoCount} video(s) have been removed": 1 本の動画を削除しました | {videoCount} 本の動画を削除しました
       Playlist {playlistName} has been deleted.: 再生リスト {playlistName} が削除されました。
       There were no videos to remove.: 削除する動画はありません。
       This playlist does not exist: この再生リストは存在しません
@@ -394,7 +394,6 @@ Settings:
       Folder Button: フォルダーの選択
     Enter Fullscreen on Display Rotate: 画面の回転時に全画面表示にする
     Skip by Scrolling Over Video Player: スクロールで動画をスキップ
-    Allow DASH AV1 formats: DASH AV1形式を許可
   Subscription Settings:
     Subscription Settings: '登録チャンネルの設定'
     Hide Videos on Watch: '視聴済み動画の非表示'
@@ -596,7 +595,7 @@ Settings:
   Experimental Settings:
     Replace HTTP Cache: HTTP キャッシュの置換
     Experimental Settings: 実験中の設定
-    Warning: 
+    Warning:
       これらの設定は実験的なものであり、有効にするとアプリのクラッシュを引き起こす恐れがあります。バックアップをとっておくことを強くお勧めします。自己責任で使用してください！
   Password Settings:
     Password Settings: パスワード設定
@@ -784,11 +783,6 @@ Video:
   Shuffle Playlist: 再生リストのシャッフル
   Loop Playlist: 再生リストのループ
   Starting soon, please refresh the page to check again: すぐに再生されます、ページを再読み込みしてお待ちください
-  Audio:
-    Best: 最適
-    High: 高
-    Medium: 中
-    Low: 低
   audio only: '音声のみ'
   video only: '映像のみ'
   Download Video: '動画のダウンロード'
@@ -801,7 +795,6 @@ Video:
   Video has been removed from your saved list: 動画を保存一覧から削除しました
   Video has been saved: 動画を保存しました
   Save Video: 動画の保存
-  translated from English: 英語から翻訳
   Sponsor Block category:
     sponsor: スポンサー
     music offtopic: 音楽以外
@@ -811,7 +804,6 @@ Video:
     intro: イントロ（冒頭）
     recap: 要約
     filler: フィラー（穴埋め）
-  Skipped segment: スキップされたセグメント
   External Player:
     OpeningTemplate: '{externalPlayer} で {videoOrPlaylist} を開く...'
     Unsupported Actions:
@@ -828,25 +820,6 @@ Video:
     video: 動画
     OpenInTemplate: '{externalPlayer} で開く'
   Premieres on: プレミア公開
-  Stats:
-    player resolution: 表示領域
-    fps: FPS
-    frame drop: コマ落ち
-    buffered: バッファー
-    video id: Video ID (YouTube)
-    volume: 音量
-    bandwidth: 接続速度
-    out of: のうち
-    Mimetype: メディアタイプ
-    Video ID: ビデオ ID
-    Resolution: 解像度
-    Bitrate: ビットレート
-    Volume: 音量
-    Buffered: バッファー
-    Player Dimensions: プレーヤーのサイズ
-    Video statistics are not available for legacy videos: 従来のビデオでは、ビデオ統計を使用できません
-    Bandwidth: 帯域幅
-    Dropped / Total Frames: ドロップ率 / 総フレーム数
   Premieres in: 配信開始まで
   Premieres: プレミア公開
   Show Super Chat Comment: Super Chat のコメント表示
@@ -1019,8 +992,6 @@ Tooltips:
     Scroll Playback Rate Over Video Player: カーソルが動画上にあるとき、Ctrl キー（Mac では Command キー）を押したまま、マウスホイールを前後にスクロールして再生速度を調整します。Control
       キー（Mac では Command キー）を押したままマウスを左クリックすると、すぐにデフォルトの再生速度（設定を変更していない場合は 1 x）に戻ります。
     Skip by Scrolling Over Video Player: スクロール ホイールを使用して、ビデオ、MPV スタイルをスキップします。
-    Allow DASH AV1 formats: DASH H.264形式よりもDASH AV1形式の方がきれいに見える可能性がありますが、再生にはより多くの処理能力が必要となります。DASH
-      AV1形式を使用できない場合、プレイヤーはDASH H.264形式を自動で使用します。
   General Settings:
     Invidious Instance: FreeTube が使用する Invidious API の接続先サーバーです。
     Preferred API Backend: FreeTube がデータを取得するために使用する方法を選択してください。内部 API はアプリ内蔵の取得機能です。
@@ -1048,7 +1019,7 @@ Tooltips:
       ID は、大文字と小文字を区別するので完全に一致させてください。
     Hide Subscriptions Live: この設定は、アプリ全体の "{appWideSetting}" 設定により上書きされます。"{settingsSection}"
       項目の "{subsection}" にあります
-    Hide Videos and Playlists Containing Text: FreeTube 
+    Hide Videos and Playlists Containing Text: FreeTube
       全体での履歴やあなたの再生リストと再生リスト内の動画を除き、元のタイトルにその単語を含む動画や単語の一部または、フレーズ（大文字と小文字を区別しない）が含まれているすべての動画と再生リストを非表示にします。
   SponsorBlock Settings:
     UseDeArrowTitles: 動画のタイトルを DeArrow からユーザーが投稿したタイトルに置き換えます。
