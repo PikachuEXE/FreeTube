@@ -151,8 +151,8 @@ export default defineComponent({
       return this.$store.getters.getBackendPreference
     },
 
-    currentInvidiousInstance: function () {
-      return this.$store.getters.getCurrentInvidiousInstance
+    currentInvidiousInstanceUrl: function () {
+      return this.$store.getters.getCurrentInvidiousInstanceUrl
     },
 
     showPlaylists: function () {
@@ -183,7 +183,7 @@ export default defineComponent({
     },
 
     invidiousUrl: function () {
-      let videoUrl = `${this.currentInvidiousInstance}/watch?v=${this.id}`
+      let videoUrl = `${this.currentInvidiousInstanceUrl}/watch?v=${this.id}`
       // `playlistId` can be undefined
       if (this.playlistSharable) {
         // `index` seems can be ignored
@@ -193,7 +193,7 @@ export default defineComponent({
     },
 
     invidiousChannelUrl: function () {
-      return `${this.currentInvidiousInstance}/channel/${this.channelId}`
+      return `${this.currentInvidiousInstanceUrl}/channel/${this.channelId}`
     },
 
     youtubeUrl: function () {
@@ -339,7 +339,7 @@ export default defineComponent({
 
       let baseUrl
       if (this.backendPreference === 'invidious') {
-        baseUrl = this.currentInvidiousInstance
+        baseUrl = this.currentInvidiousInstanceUrl
       } else {
         baseUrl = 'https://i.ytimg.com'
       }

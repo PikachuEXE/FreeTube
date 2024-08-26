@@ -37,8 +37,8 @@ export default defineComponent({
     backendPreference: function () {
       return this.$store.getters.getBackendPreference
     },
-    currentInvidiousInstance: function () {
-      return this.$store.getters.getCurrentInvidiousInstance
+    currentInvidiousInstanceUrl: function () {
+      return this.$store.getters.getCurrentInvidiousInstanceUrl
     },
 
     quickBookmarkPlaylistId() {
@@ -127,7 +127,7 @@ export default defineComponent({
     parseInvidiousData: function () {
       this.title = this.data.title
       if (this.thumbnailCanBeShown) {
-        this.thumbnail = this.data.playlistThumbnail.replace('https://i.ytimg.com', this.currentInvidiousInstance).replace('hqdefault', 'mqdefault')
+        this.thumbnail = this.data.playlistThumbnail.replace('https://i.ytimg.com', this.currentInvidiousInstanceUrl).replace('hqdefault', 'mqdefault')
       }
       this.channelName = this.data.author
       this.channelId = this.data.authorId
@@ -155,7 +155,7 @@ export default defineComponent({
       if (this.thumbnailCanBeShown && this.data.videos.length > 0) {
         const thumbnailURL = `https://i.ytimg.com/vi/${this.data.videos[0].videoId}/mqdefault.jpg`
         if (this.backendPreference === 'invidious') {
-          this.thumbnail = thumbnailURL.replace('https://i.ytimg.com', this.currentInvidiousInstance)
+          this.thumbnail = thumbnailURL.replace('https://i.ytimg.com', this.currentInvidiousInstanceUrl)
         } else {
           this.thumbnail = thumbnailURL
         }
