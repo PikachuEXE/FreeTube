@@ -25,12 +25,18 @@ function formatIdFromString(str) {
  * @param {shaka.media.SegmentIndex} segmentIndex
  */
 function createBufferedRange(formatId, buffered, segmentIndex) {
+  let endSegmentIndex = segmentIndex.find(buffered.end)
+  if (endSegmentIndex == null) {
+    // Using Last end time will get `null` in `segmentIndex.find`
+    endSegmentIndex = segmentIndex.find(buffered.end - 0.001)
+  }
+
   return {
     formatId,
     startTimeMs: Math.trunc(buffered.start * 1000),
     durationMs: Math.trunc((buffered.end - buffered.start) * 1000),
     startSegmentIndex: segmentIndex.find(buffered.start),
-    endSegmentIndex: segmentIndex.find(buffered.end)
+    endSegmentIndex: endSegmentIndex,
   }
 }
 
@@ -118,6 +124,7 @@ function createRecoverableNetworkError(code, ...args) {
  * @param {shaka.extern.Request} request
  * @param {shaka.net.NetworkingEngine.RequestType} requestType
  * @param {RequestInit} init
+ * @param {Protos.VideoPlaybackAbrRequest} requestData
  * @param {{ cancelled: boolean, timedOut: boolean, finished: boolean }} abortStatus
  * @param {AbortController} abortController
  * @param {(headers: Record<string, string>) => void} headersReceived
@@ -133,6 +140,7 @@ async function doRequest(
   request,
   requestType,
   init,
+  requestData,
   abortStatus,
   abortController,
   headersReceived
@@ -148,19 +156,54 @@ async function doRequest(
   let error
   /** @type {string | undefined} */
   let redirectUrl
+  /** @type {number | undefined} */
+  let backoffTimeMs
+  /** @type {import('googlevideo').Part[]} */
+  const parts = []
+  /** @type {{ type: string, data: {[string]: unknown } }[]} */
+  const debugEntries = []
+  /** @type {import('googlevideo').PlaybackCookie | undefined} */
+  let playbackCookie
 
   try {
     response = await fetch(sabrUrl, init)
+    debugEntries.push({
+      type: 'response',
+      data: {
+        response,
+      }
+    })
 
     headersReceived({})
 
     const { itag, lastModified, xtags } = formatIdFromString(formatIdString)
     let mediaHeaderId
+    debugEntries.push({
+      type: 'formatIdFromString',
+      data: {
+        itag,
+        lastModified,
+        xtags,
+      }
+    })
 
     const reader = response.body.getReader()
     let readObj = await reader.read()
+    debugEntries.push({
+      type: 'readObj',
+      data: {
+        readObj,
+        abortStatus,
+      }
+    })
 
     while (!readObj.done && !abortStatus.finished) {
+      debugEntries.push({
+        type: 'whileLoopStart',
+        data: {
+          chunkedDataBuffer,
+        }
+      })
       if (chunkedDataBuffer) {
         chunkedDataBuffer.append(readObj.value)
       } else {
@@ -168,28 +211,44 @@ async function doRequest(
       }
 
       const remainingData = new GoogleVideo.UMP(chunkedDataBuffer).parse((part) => {
+        parts.push(part)
         switch (part.type) {
           case PART.STREAM_PROTECTION_STATUS: {
             const streamProtectionStatus = Protos.StreamProtectionStatus.decode(part.data.chunks[0])
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
             }
+            debugEntries.push({ type: 'STREAM_PROTECTION_STATUS', data: { streamProtectionStatus } })
             break
           }
           case PART.SABR_ERROR: {
             const sabrError = Protos.SabrError.decode(part.data.chunks[0])
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
+            debugEntries.push({ type: 'SABR_ERROR', data: { error } })
             break
           }
           case PART.SABR_REDIRECT: {
             const sabrRedirect = Protos.SabrRedirect.decode(part.data.chunks[0])
             redirectUrl = sabrRedirect.url
             updateSabrUrl(redirectUrl)
+            debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl } })
             break
           }
           case PART.MEDIA_HEADER: {
             if (mediaHeaderId === undefined) {
               const mediaHeader = Protos.MediaHeader.decode(part.data.chunks[0])
+              debugEntries.push({
+                type: 'MEDIA_HEADER',
+                mediaHeaderId,
+                remoteMediaHeaderId: mediaHeader.headerId,
+                data: {
+                  isInit,
+                  sequenceNumber,
+                  mediaHeader_isInitSeg: mediaHeader.isInitSeg,
+                  mediaHeader_sequenceNumber: mediaHeader.sequenceNumber,
+                  mediaHeader_formatId: mediaHeader.formatId,
+                },
+              })
 
               if (
                 mediaHeader.formatId.itag === itag &&
@@ -207,12 +266,27 @@ async function doRequest(
             break
           }
           case PART.MEDIA: {
+            debugEntries.push({
+              type: 'MEDIA',
+              data: {
+                mediaHeaderId,
+                remoteMediaHeaderId: part.data.getUint8(0),
+                chunks: part.data.split(1).remainingBuffer.chunks,
+              },
+            })
             if (mediaHeaderId === part.data.getUint8(0)) {
               responseDataChunks.push(...part.data.split(1).remainingBuffer.chunks)
             }
             break
           }
           case PART.MEDIA_END: {
+            debugEntries.push({
+              type: 'MEDIA_END',
+              data: {
+                mediaHeaderId,
+                remoteMediaHeaderId: part.data.getUint8(0),
+              },
+            })
             if (mediaHeaderId === part.data.getUint8(0)) {
               segmentComplete = true
               abortStatus.finished = true
@@ -220,9 +294,61 @@ async function doRequest(
             }
             break
           }
+          case PART.NEXT_REQUEST_POLICY: {
+            const nextRequestPolicy = Protos.NextRequestPolicy.decode(part.data.chunks[0])
+            if (nextRequestPolicy.playbackCookie) {
+              playbackCookie = nextRequestPolicy.playbackCookie
+            }
+            if (nextRequestPolicy.backoffTimeMs != null && nextRequestPolicy.backoffTimeMs > 0) {
+              backoffTimeMs = nextRequestPolicy.backoffTimeMs
+            }
+            debugEntries.push({
+              type: 'NEXT_REQUEST_POLICY',
+              data: {
+                nextRequestPolicy: nextRequestPolicy,
+              },
+            })
+            break
+          }
+          case PART.FORMAT_INITIALIZATION_METADATA: {
+            debugEntries.push({
+              type: 'FORMAT_INITIALIZATION_METADATA',
+              data: {
+                formatInitializationMetadata: Protos.FormatInitializationMetadata.decode(part.data.chunks[0]),
+              },
+            })
+            break
+          }
+          case PART.SABR_CONTEXT_UPDATE: {
+            debugEntries.push({
+              type: 'SABR_CONTEXT_UPDATE',
+              data: {},
+            })
+            break
+          }
+          case 67: {
+            debugEntries.push({
+              type: 'SNACKBAR_MESSAGE',
+              data: {},
+            })
+            break
+          }
+          default: {
+            debugEntries.push({
+              type: 'unhandled',
+              data: part.type
+            })
+          }
         }
       })
 
+      debugEntries.push({
+        type: 'whileLoopNearEnd',
+        data: {
+          abortStatus,
+          remainingData,
+        }
+      })
       if (!abortStatus.finished) {
         if (remainingData) {
           chunkedDataBuffer = remainingData.data
@@ -234,6 +360,12 @@ async function doRequest(
       }
     }
   } catch (error) {
+    debugEntries.push({
+      type: 'error',
+      data: {
+        abortStatus,
+      }
+    })
     if (abortStatus.cancelled) {
       throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, uri, requestType)
     } else if (abortStatus.timedOut) {
@@ -244,8 +376,20 @@ async function doRequest(
   }
 
   if (abortStatus.cancelled) {
+    debugEntries.push({
+      type: 'cancelled',
+      data: {
+        abortStatus,
+      }
+    })
     throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, uri, requestType)
   } else if (abortStatus.timedOut) {
+    debugEntries.push({
+      type: 'timedOut',
+      data: {
+        abortStatus,
+      }
+    })
     throw createRecoverableNetworkError(ShakaError.Code.TIMEOUT, uri, requestType)
   }
 
@@ -266,22 +410,87 @@ async function doRequest(
       fromCache: false,
       originalRequest: request
     }
-  } else if (redirectUrl) {
+  } else if (playbackCookie || backoffTimeMs || redirectUrl) {
+    let shouldRetry = redirectUrl != null
+    let nextInit = init
+    if (playbackCookie) {
+      console.warn('playbackCookie present', {
+        playbackCookie: playbackCookie,
+        requestData: requestData,
+        invalidPoToken,
+        redirectUrl,
+        parts,
+        debugEntries,
+
+        sabrUrl,
+        initDataCache,
+        uri,
+        formatIdString,
+        isInit,
+        sequenceNumber,
+        request,
+        requestType,
+        abortStatus,
+      })
+      const newPlaybackCookie = Protos.PlaybackCookie.encode(playbackCookie).finish()
+      if (newPlaybackCookie.length > 0 && (requestData.streamerContext.playbackCookie == null || requestData.streamerContext.playbackCookie.length !== newPlaybackCookie.length)) {
+        console.warn('newPlaybackCookie different', requestData.streamerContext.playbackCookie, newPlaybackCookie)
+        requestData.streamerContext.playbackCookie = newPlaybackCookie
+
+        let body
+
+        try {
+          body = Protos.VideoPlaybackAbrRequest.encode(requestData).finish()
+        } catch (error) {
+          console.error('Invalid VideoPlaybackAbrRequest data', requestData)
+          throw error
+        }
+
+        nextInit = {
+          body,
+          method: 'POST',
+          signal: abortController.signal
+        }
+        abortStatus.timedOut = false
+        shouldRetry = true
+      }
+    }
+    if (backoffTimeMs) {
+      console.warn('backoffTimeMs present', {
+        backoffTimeMs,
+      })
+      await new Promise(resolve => setTimeout(resolve, backoffTimeMs))
+      abortStatus.timedOut = false
+    }
+
     abortStatus.finished = false
-    return doRequest(
-      redirectUrl,
-      updateSabrUrl,
-      initDataCache,
+    if (shouldRetry) {
+      return doRequest(
+        redirectUrl ?? sabrUrl,
+        updateSabrUrl,
+        initDataCache,
+        uri,
+        formatIdString,
+        isInit,
+        sequenceNumber,
+        request,
+        requestType,
+        nextInit,
+        requestData,
+        abortStatus,
+        abortController,
+        () => { }
+      )
+    }
+
+    throw new ShakaError(
+      ShakaError.Severity.CRITICAL,
+      ShakaError.Category.NETWORK,
+      // Must be the same as the one in `Watch.js` to catch the error
+      ShakaError.Code.LOAD_INTERRUPTED,
       uri,
-      formatIdString,
-      isInit,
-      sequenceNumber,
-      request,
-      requestType,
-      init,
-      abortStatus,
-      abortController,
-      () => { }
+      new Error('new playbackCookie present but empty'),
+      requestType
     )
   } else if (invalidPoToken) {
     throw new ShakaError(
@@ -300,6 +509,9 @@ async function doRequest(
       requestType
     )
   } else if (responseDataChunks.length > 0 && !segmentComplete) {
+    console.warn('Incomplete segment, missing MEDIA_END part')
+    console.warn('parts', parts)
+    console.warn('debugEntries', debugEntries)
     throw createRecoverableNetworkError(
       ShakaError.Code.HTTP_ERROR,
       uri,
@@ -307,6 +519,9 @@ async function doRequest(
       requestType
     )
   } else if (response.status === 200) {
+    console.warn('Empty response, this should not happen')
+    console.warn('parts', parts)
+    console.warn('debugEntries', debugEntries)
     throw createRecoverableNetworkError(
       ShakaError.Code.HTTP_ERROR,
       uri,
@@ -492,6 +707,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       request,
       requestType,
       init,
+      requestData,
       abortStatus,
       controller,
       headersReceived
@@ -506,6 +722,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     const timeoutMs = request.retryParameters.timeout
     if (timeoutMs) {
       const timeout = setTimeout(() => {
+        console.warn('setTimeout reached, timeoutMs: ', timeoutMs)
         abortStatus.timedOut = true
         controller.abort()
       }, timeoutMs)

@@ -310,7 +310,28 @@ export default defineComponent({
   },
   watch: {
     async $route() {
-      this.handleRouteChange()
+      await this.reloadView()
+    },
+    userPlaylistsReady() {
+      this.onMountedDependOnLocalStateLoading()
+    },
+  },
+  created: function () {
+    this.videoId = this.$route.params.id
+    this.activeFormat = this.defaultVideoFormat
+    // So that the value for this session remains unchanged even if setting changed
+    this.autoplayNextRecommendedVideo = this.autoplayNextRecommendedVideoByDefault
+    this.autoplayNextPlaylistVideo = this.autoplayNextPlaylistVideoByDefault
+
+    this.checkIfTimestamp()
+    this.currentPlaybackRate = this.$store.getters.getDefaultPlayback
+  },
+  mounted: function () {
+    this.onMountedDependOnLocalStateLoading()
+  },
+  methods: {
+    async reloadView(forceDash = false) {
+      await this.handleRouteChange()
 
       if (this.$refs.player) {
         await this.destroyPlayer()
@@ -337,31 +358,13 @@ export default defineComponent({
 
       switch (this.backendPreference) {
         case 'local':
-          this.getVideoInformationLocal(this.videoId)
+          await this.getVideoInformationLocal(forceDash)
           break
         case 'invidious':
-          this.getVideoInformationInvidious(this.videoId)
+          this.getVideoInformationInvidious()
           break
       }
     },
-    userPlaylistsReady() {
-      this.onMountedDependOnLocalStateLoading()
-    },
-  },
-  created: function () {
-    this.videoId = this.$route.params.id
-    this.activeFormat = this.defaultVideoFormat
-    // So that the value for this session remains unchanged even if setting changed
-    this.autoplayNextRecommendedVideo = this.autoplayNextRecommendedVideoByDefault
-    this.autoplayNextPlaylistVideo = this.autoplayNextPlaylistVideoByDefault
-
-    this.checkIfTimestamp()
-    this.currentPlaybackRate = this.$store.getters.getDefaultPlayback
-  },
-  mounted: function () {
-    this.onMountedDependOnLocalStateLoading()
-  },
-  methods: {
     onMountedDependOnLocalStateLoading() {
       // Prevent running twice
       if (this.onMountedRun) { return }
@@ -414,7 +417,7 @@ export default defineComponent({
       }
     },
 
-    getVideoInformationLocal: async function () {
+    getVideoInformationLocal: async function (forceDash = false) {
       if (this.firstLoad) {
         this.isLoading = true
       }
@@ -846,7 +849,12 @@ export default defineComponent({
               })
               ?.projection_type ?? null
 
-            if (result.streaming_data.server_abr_streaming_url) {
+            if (forceDash) {
+              console.warn('getVideoInformationLocal > forceDash = true')
+              this.manifestSrc = await this.createLocalDashManifest(result)
+              this.manifestMimeType = MANIFEST_TYPE_DASH
+            } else if (result.streaming_data.server_abr_streaming_url) {
+              console.warn('getVideoInformationLocal > using SABR')
               const storyboards = storyboard
                 ? [{
                     templateUrl: storyboard.template_url,
@@ -1498,6 +1506,10 @@ export default defineComponent({
             return
           }
         }
+      } else if (process.env.SUPPORTS_LOCAL_API && this.backendPreference === 'local' && error.code === Code.LOAD_INTERRUPTED && this.activeFormat === 'dash') {
+        // Our SABR plugin throwing custom error
+        this.reloadView(true)
+        return
       }
 
       if (this.isLive || this.isPostLiveDvr) {

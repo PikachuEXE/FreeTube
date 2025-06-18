@@ -197,7 +197,7 @@ export async function getLocalSearchContinuation(continuationData) {
 /**
  * @param {string} id
  * @returns {Promise<{
- *   info: YT.VideoInfo,
+ *   info: import('youtubei.js').YT.VideoInfo,
  *   poToken: string | undefined,
  *   clientInfo: {
  *     clientName: number,
@@ -232,6 +232,14 @@ export async function getLocalVideoInfo(id) {
   }
 
   const info = await webInnertube.getInfo(id)
+
+  // temporary workaround for SABR-only responses
+  const mwebInfo = await webInnertube.getBasicInfo(id, 'MWEB')
+
+  if (mwebInfo.playability_status.status === 'OK' && mwebInfo.streaming_data?.adaptive_formats) {
+    info.playability_status = mwebInfo.playability_status
+    info.streaming_data.adaptive_formats = mwebInfo.streaming_data.adaptive_formats
+  }
 
   let { clientName, clientVersion, osName, osVersion } = webInnertube.session.context.client
 
