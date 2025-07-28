@@ -1,7 +1,6 @@
 import shaka from 'shaka-player'
 import { parseWebmSegmentIndex } from './WebmSegmentIndexParser'
 import { parseMp4SegmentIndex } from './Mp4SegmentIndexParser'
-import { QUALITY } from 'googlevideo'
 
 /**
  * @typedef {{
@@ -611,7 +610,7 @@ async function createMediaSegmentIndex(
   }
 
   if (stream.type === 'video') {
-    const resolution = QUALITY[format.quality.toUpperCase()]
+    const resolution = format.height || 360
 
     url += `&resolution=${resolution}`
   }

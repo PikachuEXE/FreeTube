@@ -1,10 +1,54 @@
-import { GoogleVideo, base64ToU8, concatenateChunks, PART, Protos } from 'googlevideo'
+import { base64ToU8, concatenateChunks } from 'googlevideo/utils'
+import { CompositeBuffer, UmpReader } from 'googlevideo/ump'
+import {
+  UMPPartId,
+  VideoPlaybackAbrRequest,
+  SabrContextSendingPolicy,
+  SabrContextUpdate,
+  SabrContextWritePolicy,
+  NextRequestPolicy,
+  PlaybackCookie,
+} from 'googlevideo/protos'
+import * as Protos from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
 import { deepCopy } from '../utils'
 
 const AbortableOperation = shaka.util.AbortableOperation
 const ShakaError = shaka.util.Error
+
+/**
+ * @typedef OperationInputs
+ * @type {object}
+ * @property {string} uri
+ * @property {shaka.extern.Request} request
+ * @property {shaka.net.NetworkingEngine.RequestType} requestType
+ * @property {shaka.extern.HeadersReceived} headersReceived
+ * The following are calculated from above properties
+ * @property {string} formatIdString
+ * @property {boolean} isInit
+ * @property {number} sequenceNumber
+ */
+/**
+ * @typedef AbortStatus
+ * @type {object}
+ * @property {boolean} cancelled
+ * @property {boolean} timedOut
+ * @property {boolean} finished
+ */
+/**
+ * @typedef CurrentState
+ * @type {object}
+ * @property {string} sabrUrl
+ * @property {Map<string, Uint8Array>} initDataCache
+ * @property {Map<number, SabrContextUpdate>} sabrContexts
+ * @property {Set<number>} activeSabrContextTypes
+ * @property {VideoPlaybackAbrRequest} abrRequest
+ * @property {RequestInit} requestInit
+ * @property {AbortStatus} abortStatus
+ * @property {AbortController} abortController
+ * @property {SabrStreamState} sabrStreamState
+ */
 
 /**
  * @param {string} str
@@ -114,39 +158,58 @@ function createRecoverableNetworkError(code, ...args) {
 }
 
 /**
- * @param {string} sabrUrl
- * @param {(newUrl: string) => void} updateSabrUrl
- * @param {Map<string, Uint8Array>} initDataCache
- * @param {string} uri
- * @param {string} formatIdString
- * @param {boolean} isInit
- * @param {number} sequenceNumber
- * @param {shaka.extern.Request} request
- * @param {shaka.net.NetworkingEngine.RequestType} requestType
- * @param {RequestInit} init
- * @param {Protos.VideoPlaybackAbrRequest} requestData
- * @param {{ cancelled: boolean, timedOut: boolean, finished: boolean }} abortStatus
- * @param {AbortController} abortController
- * @param {(headers: Record<string, string>) => void} headersReceived
+ * @param {SabrStreamState} sabrStreamState
+ */
+function prepareSabrContexts(sabrStreamState) {
+  /** @type {SabrContextUpdate[]} */
+  const sabrContexts = []
+  /** @type {number[]} */
+  const unsentSabrContexts = []
+
+  for (const ctxUpdate of sabrStreamState.sabrContexts.values()) {
+    if (sabrStreamState.activeSabrContextTypes.has(ctxUpdate.type)) {
+      sabrContexts.push(ctxUpdate)
+    } else {
+      unsentSabrContexts.push(ctxUpdate.type)
+    }
+  }
+
+  return { sabrContexts, unsentSabrContexts }
+}
+
+/**
+ * @typedef DecodeFunc
+ * @param {Uint8Array} data
+ */
+/**
+ * @typedef Decoder
+ * @type {object}
+ * @property {DecodeFunc} decode
+ */
+/**
+ * @param {import('googlevideo/shared-types').Part} part
+ * @param {Decoder} decoder
+ */
+function decodePart(part, decoder) {
+  if (!part.data.chunks.length) return undefined
+
+  try {
+    return decoder.decode(concatenateChunks(part.data.chunks))
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * @param {OperationInputs} operationInputs - readonly
+ * @param {CurrentState} currentState - can be updated
  */
 async function doRequest(
-  sabrUrl,
-  updateSabrUrl,
-  initDataCache,
-  uri,
-  formatIdString,
-  isInit,
-  sequenceNumber,
-  request,
-  requestType,
-  init,
-  requestData,
-  abortStatus,
-  abortController,
-  headersReceived
+  operationInputs,
+  currentState,
 ) {
   let response
-  /** @type {GoogleVideo.ChunkedDataBuffer | null} */
+  /** @type {CompositeBuffer | null} */
   let chunkedDataBuffer = null
   /** @type {Uint8Array[]} */
   const responseDataChunks = []
@@ -160,13 +223,13 @@ async function doRequest(
   let backoffTimeMs
   /** @type {import('googlevideo').Part[]} */
   const parts = []
-  /** @type {{ type: string, data: {[string]: unknown } }[]} */
+  /** @type {({ type: string, data: {[string]: unknown }|string) }[]} */
   const debugEntries = []
-  /** @type {import('googlevideo').PlaybackCookie | undefined} */
+  /** @type {import('googlevideo/protos').PlaybackCookie | undefined} */
   let playbackCookie
 
   try {
-    response = await fetch(sabrUrl, init)
+    response = await fetch(currentState.sabrUrl, currentState.requestInit)
     debugEntries.push({
       type: 'response',
       data: {
@@ -174,9 +237,9 @@ async function doRequest(
       }
     })
 
-    headersReceived({})
+    operationInputs.headersReceived({})
 
-    const { itag, lastModified, xtags } = formatIdFromString(formatIdString)
+    const { itag, lastModified, xtags } = formatIdFromString(operationInputs.formatIdString)
     let mediaHeaderId
     debugEntries.push({
       type: 'formatIdFromString',
@@ -193,11 +256,11 @@ async function doRequest(
       type: 'readObj',
       data: {
         readObj,
-        abortStatus,
+        abortStatus: currentState.abortStatus,
       }
     })
 
-    while (!readObj.done && !abortStatus.finished) {
+    while (!readObj.done && !currentState.abortStatus.finished) {
       debugEntries.push({
         type: 'whileLoopStart',
         data: {
@@ -207,13 +270,13 @@ async function doRequest(
       if (chunkedDataBuffer) {
         chunkedDataBuffer.append(readObj.value)
       } else {
-        chunkedDataBuffer = new GoogleVideo.ChunkedDataBuffer([readObj.value])
+        chunkedDataBuffer = new CompositeBuffer([readObj.value])
       }
 
-      const remainingData = new GoogleVideo.UMP(chunkedDataBuffer).parse((part) => {
+      const remainingData = new UmpReader(chunkedDataBuffer).read((part) => {
         parts.push(part)
         switch (part.type) {
-          case PART.STREAM_PROTECTION_STATUS: {
+          case UMPPartId.STREAM_PROTECTION_STATUS: {
             const streamProtectionStatus = Protos.StreamProtectionStatus.decode(part.data.chunks[0])
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
@@ -221,29 +284,28 @@ async function doRequest(
             debugEntries.push({ type: 'STREAM_PROTECTION_STATUS', data: { streamProtectionStatus } })
             break
           }
-          case PART.SABR_ERROR: {
-            const sabrError = Protos.SabrError.decode(part.data.chunks[0])
+          case UMPPartId.SABR_ERROR: {
+            const sabrError = Protos.SabrError.decode(concatenateChunks(part.data.chunks))
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
             debugEntries.push({ type: 'SABR_ERROR', data: { error } })
             break
           }
-          case PART.SABR_REDIRECT: {
-            const sabrRedirect = Protos.SabrRedirect.decode(part.data.chunks[0])
+          case UMPPartId.SABR_REDIRECT: {
+            const sabrRedirect = Protos.SabrRedirect.decode(concatenateChunks(part.data.chunks))
             redirectUrl = sabrRedirect.url
-            updateSabrUrl(redirectUrl)
             debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl } })
             break
           }
-          case PART.MEDIA_HEADER: {
+          case UMPPartId.MEDIA_HEADER: {
             if (mediaHeaderId === undefined) {
-              const mediaHeader = Protos.MediaHeader.decode(part.data.chunks[0])
+              const mediaHeader = Protos.MediaHeader.decode(concatenateChunks(part.data.chunks))
               debugEntries.push({
                 type: 'MEDIA_HEADER',
                 mediaHeaderId,
                 remoteMediaHeaderId: mediaHeader.headerId,
                 data: {
-                  isInit,
-                  sequenceNumber,
+                  isInit: operationInputs.isInit,
+                  sequenceNumber: operationInputs.sequenceNumber,
                   mediaHeader_isInitSeg: mediaHeader.isInitSeg,
                   mediaHeader_sequenceNumber: mediaHeader.sequenceNumber,
                   mediaHeader_formatId: mediaHeader.formatId,
@@ -255,9 +317,9 @@ async function doRequest(
                 mediaHeader.formatId.lastModified === lastModified &&
                 mediaHeader.formatId.xtags === xtags
               ) {
-                if (isInit && mediaHeader.isInitSeg) {
+                if (operationInputs.isInit && mediaHeader.isInitSeg) {
                   mediaHeaderId = mediaHeader.headerId
-                } else if (!isInit && mediaHeader.sequenceNumber === sequenceNumber) {
+                } else if (!operationInputs.isInit && mediaHeader.sequenceNumber === operationInputs.sequenceNumber) {
                   mediaHeaderId = mediaHeader.headerId
                 }
               }
@@ -265,7 +327,7 @@ async function doRequest(
 
             break
           }
-          case PART.MEDIA: {
+          case UMPPartId.MEDIA: {
             debugEntries.push({
               type: 'MEDIA',
               data: {
@@ -279,7 +341,7 @@ async function doRequest(
             }
             break
           }
-          case PART.MEDIA_END: {
+          case UMPPartId.MEDIA_END: {
             debugEntries.push({
               type: 'MEDIA_END',
               data: {
@@ -289,15 +351,17 @@ async function doRequest(
             })
             if (mediaHeaderId === part.data.getUint8(0)) {
               segmentComplete = true
-              abortStatus.finished = true
-              abortController.abort()
+              currentState.abortStatus.finished = true
+              currentState.abortController.abort()
             }
             break
           }
-          case PART.NEXT_REQUEST_POLICY: {
-            const nextRequestPolicy = Protos.NextRequestPolicy.decode(part.data.chunks[0])
+          case UMPPartId.NEXT_REQUEST_POLICY: {
+            const nextRequestPolicy = NextRequestPolicy.decode(concatenateChunks(part.data.chunks))
+            currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
             if (nextRequestPolicy.playbackCookie) {
               playbackCookie = nextRequestPolicy.playbackCookie
+              currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(playbackCookie).finish()
             }
             if (nextRequestPolicy.backoffTimeMs != null && nextRequestPolicy.backoffTimeMs > 0) {
               backoffTimeMs = nextRequestPolicy.backoffTimeMs
@@ -310,20 +374,74 @@ async function doRequest(
             })
             break
           }
-          case PART.FORMAT_INITIALIZATION_METADATA: {
+          case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
             debugEntries.push({
               type: 'FORMAT_INITIALIZATION_METADATA',
               data: {
-                formatInitializationMetadata: Protos.FormatInitializationMetadata.decode(part.data.chunks[0]),
+                formatInitializationMetadata: Protos.FormatInitializationMetadata.decode(concatenateChunks(part.data.chunks)),
               },
             })
             break
           }
-          case PART.SABR_CONTEXT_UPDATE: {
+          case UMPPartId.SABR_CONTEXT_UPDATE: {
+            const sabrContextUpdate = SabrContextUpdate.decode(concatenateChunks(part.data.chunks))
             debugEntries.push({
               type: 'SABR_CONTEXT_UPDATE',
-              data: {},
+              data: {
+                sabrContextUpdate,
+              },
             })
+            if (!sabrContextUpdate) break
+
+            if (sabrContextUpdate.type !== undefined && sabrContextUpdate.value?.length) {
+              if (
+                sabrContextUpdate.writePolicy === SabrContextWritePolicy.KEEP_EXISTING &&
+                currentState.sabrStreamState.sabrContexts.has(sabrContextUpdate.type)
+              ) {
+                debugEntries.push(`Skipping SABR context update for type ${sabrContextUpdate.type}`)
+                break
+              }
+
+              currentState.sabrStreamState.sabrContexts.set(sabrContextUpdate.type, sabrContextUpdate)
+
+              if (sabrContextUpdate.sendByDefault) {
+                currentState.sabrStreamState.activeSabrContextTypes.add(sabrContextUpdate.type)
+              }
+
+              debugEntries.push(`Received SABR context update (type: ${sabrContextUpdate.type}, sendByDefault: ${sabrContextUpdate.sendByDefault})`)
+            }
+            break
+          }
+          case UMPPartId.SABR_CONTEXT_SENDING_POLICY: {
+            const sabrContextSendingPolicy = SabrContextSendingPolicy.decode(concatenateChunks(part.data.chunks))
+            debugEntries.push({
+              type: 'SABR_CONTEXT_SENDING_POLICY',
+              data: {
+                sabrContextSendingPolicy,
+              },
+            })
+            if (!sabrContextSendingPolicy) break
+
+            for (const startPolicy of sabrContextSendingPolicy.startPolicy) {
+              if (!currentState.sabrStreamState.activeSabrContextTypes.has(startPolicy)) {
+                currentState.sabrStreamState.activeSabrContextTypes.add(startPolicy)
+                debugEntries.push(`Activated SABR context for type ${startPolicy}`)
+              }
+            }
+
+            for (const stopPolicy of sabrContextSendingPolicy.stopPolicy) {
+              if (currentState.sabrStreamState.activeSabrContextTypes.has(stopPolicy)) {
+                currentState.sabrStreamState.activeSabrContextTypes.delete(stopPolicy)
+                debugEntries.push(`Deactivated SABR context for type ${stopPolicy}`)
+              }
+            }
+
+            for (const discardPolicy of sabrContextSendingPolicy.discardPolicy) {
+              if (currentState.sabrStreamState.sabrContexts.has(discardPolicy)) {
+                currentState.sabrStreamState.sabrContexts.delete(discardPolicy)
+                debugEntries.push(`Discarded SABR context for type ${discardPolicy}`)
+              }
+            }
             break
           }
           case 67: {
@@ -345,11 +463,11 @@ async function doRequest(
       debugEntries.push({
         type: 'whileLoopNearEnd',
         data: {
-          abortStatus,
+          abortStatus: currentState.abortStatus,
           remainingData,
         }
       })
-      if (!abortStatus.finished) {
+      if (!currentState.abortStatus.finished) {
         if (remainingData) {
           chunkedDataBuffer = remainingData.data
         } else {
@@ -363,124 +481,110 @@ async function doRequest(
     debugEntries.push({
       type: 'error',
       data: {
-        abortStatus,
+        abortStatus: currentState.abortStatus,
       }
     })
-    if (abortStatus.cancelled) {
-      throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, uri, requestType)
-    } else if (abortStatus.timedOut) {
-      throw createRecoverableNetworkError(ShakaError.Code.TIMEOUT, uri, requestType)
-    } else if (!abortStatus.finished) {
-      throw createRecoverableNetworkError(ShakaError.Code.HTTP_ERROR, uri, error, requestType)
+    if (currentState.abortStatus.cancelled) {
+      throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, operationInputs.uri, operationInputs.requestType)
+    } else if (currentState.abortStatus.timedOut) {
+      throw createRecoverableNetworkError(ShakaError.Code.TIMEOUT, operationInputs.uri, operationInputs.requestType)
+    } else if (!currentState.abortStatus.finished) {
+      throw createRecoverableNetworkError(ShakaError.Code.HTTP_ERROR, operationInputs.uri, error, operationInputs.requestType)
     }
   }
 
-  if (abortStatus.cancelled) {
+  if (currentState.abortStatus.cancelled) {
     debugEntries.push({
       type: 'cancelled',
       data: {
-        abortStatus,
+        abortStatus: currentState.abortStatus,
       }
     })
-    throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, uri, requestType)
-  } else if (abortStatus.timedOut) {
+    throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, operationInputs.uri, operationInputs.requestType)
+  } else if (currentState.abortStatus.timedOut) {
     debugEntries.push({
       type: 'timedOut',
       data: {
-        abortStatus,
+        abortStatus: currentState.abortStatus,
       }
     })
-    throw createRecoverableNetworkError(ShakaError.Code.TIMEOUT, uri, requestType)
+    throw createRecoverableNetworkError(ShakaError.Code.TIMEOUT, operationInputs.uri, operationInputs.requestType)
   }
 
   if (responseDataChunks.length > 0 && segmentComplete) {
     const data = /** @__NOINLINE__ */ concatenateChunks(responseDataChunks)
 
-    if (isInit) {
-      initDataCache.set(formatIdString, data)
+    if (operationInputs.isInit) {
+      currentState.initDataCache.set(operationInputs.formatIdString, data)
     }
 
     /** @type {shaka.extern.Response} */
     return {
-      uri,
-      originalUri: uri,
+      uri: operationInputs.uri,
+      originalUri: operationInputs.uri,
       data,
       status: response.status,
       headers: {},
       fromCache: false,
-      originalRequest: request
+      originalRequest: operationInputs.request,
     }
-  } else if (playbackCookie || backoffTimeMs || redirectUrl) {
+  } else if (playbackCookie || currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs || redirectUrl) {
     let shouldRetry = redirectUrl != null
-    let nextInit = init
+    if (redirectUrl != null) {
+      currentState.sabrUrl = redirectUrl
+    }
     if (playbackCookie) {
       console.warn('playbackCookie present', {
         playbackCookie: playbackCookie,
-        requestData: requestData,
+        abrRequest: currentState.abrRequest,
         invalidPoToken,
         redirectUrl,
         parts,
         debugEntries,
 
-        sabrUrl,
-        initDataCache,
-        uri,
-        formatIdString,
-        isInit,
-        sequenceNumber,
-        request,
-        requestType,
-        abortStatus,
+        operationInputs,
+        currentState,
       })
-      const newPlaybackCookie = Protos.PlaybackCookie.encode(playbackCookie).finish()
-      if (newPlaybackCookie.length > 0 && (requestData.streamerContext.playbackCookie == null || requestData.streamerContext.playbackCookie.length !== newPlaybackCookie.length)) {
-        console.warn('newPlaybackCookie different', requestData.streamerContext.playbackCookie, newPlaybackCookie)
-        requestData.streamerContext.playbackCookie = newPlaybackCookie
+      currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(playbackCookie).finish()
 
-        let body
+      const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(currentState.sabrStreamState)
 
-        try {
-          body = Protos.VideoPlaybackAbrRequest.encode(requestData).finish()
-        } catch (error) {
-          console.error('Invalid VideoPlaybackAbrRequest data', requestData)
-          throw error
-        }
+      currentState.abrRequest.streamerContext.sabrContexts = sabrContexts
+      currentState.abrRequest.streamerContext.unsentSabrContexts = unsentSabrContexts
 
-        nextInit = {
-          body,
-          method: 'POST',
-          signal: abortController.signal
-        }
-        abortStatus.timedOut = false
-        shouldRetry = true
+      let body
+
+      try {
+        body = VideoPlaybackAbrRequest.encode(currentState.abrRequest).finish()
+      } catch (error) {
+        console.error('Invalid VideoPlaybackAbrRequest data', currentState.abrRequest)
+        throw error
       }
+
+      currentState.requestInit = {
+        body,
+        method: 'POST',
+        headers: {
+          'content-type': 'application/x-protobuf',
+          'accept-encoding': 'identity',
+          accept: 'application/vnd.yt-ump',
+        },
+        signal: currentState.abortController.signal,
+      }
+      currentState.abortStatus.timedOut = false
+      shouldRetry = true
     }
-    if (backoffTimeMs) {
+    if (currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs) {
       console.warn('backoffTimeMs present', {
-        backoffTimeMs,
+        backoffTimeMs: currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs,
       })
-      await new Promise(resolve => setTimeout(resolve, backoffTimeMs))
-      abortStatus.timedOut = false
+      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs))
+      currentState.abortStatus.timedOut = false
     }
 
-    abortStatus.finished = false
+    currentState.abortStatus.finished = false
     if (shouldRetry) {
-      return doRequest(
-        redirectUrl ?? sabrUrl,
-        updateSabrUrl,
-        initDataCache,
-        uri,
-        formatIdString,
-        isInit,
-        sequenceNumber,
-        request,
-        requestType,
-        nextInit,
-        requestData,
-        abortStatus,
-        abortController,
-        () => { }
-      )
+      return doRequest(operationInputs, currentState)
     }
 
     throw new ShakaError(
@@ -488,25 +592,25 @@ async function doRequest(
       ShakaError.Category.NETWORK,
       // Must be the same as the one in `Watch.js` to catch the error
       ShakaError.Code.LOAD_INTERRUPTED,
-      uri,
+      operationInputs.uri,
       new Error('new playbackCookie present but empty'),
-      requestType
+      operationInputs.requestType,
     )
   } else if (invalidPoToken) {
     throw new ShakaError(
       ShakaError.Severity.CRITICAL,
       ShakaError.Category.NETWORK,
       ShakaError.Code.HTTP_ERROR,
-      uri,
+      operationInputs.uri,
       new Error('Invalid PO token'),
-      requestType
+      operationInputs.requestType,
     )
   } else if (error) {
     throw createRecoverableNetworkError(
       ShakaError.Code.HTTP_ERROR,
-      uri,
+      operationInputs.uri,
       new Error(error),
-      requestType
+      operationInputs.requestType,
     )
   } else if (responseDataChunks.length > 0 && !segmentComplete) {
     console.warn('Incomplete segment, missing MEDIA_END part')
@@ -514,9 +618,9 @@ async function doRequest(
     console.warn('debugEntries', debugEntries)
     throw createRecoverableNetworkError(
       ShakaError.Code.HTTP_ERROR,
-      uri,
+      operationInputs.uri,
       new Error('Incomplete segment, missing MEDIA_END part'),
-      requestType
+      operationInputs.requestType,
     )
   } else if (response.status === 200) {
     console.warn('Empty response, this should not happen')
@@ -524,9 +628,9 @@ async function doRequest(
     console.warn('debugEntries', debugEntries)
     throw createRecoverableNetworkError(
       ShakaError.Code.HTTP_ERROR,
-      uri,
+      operationInputs.uri,
       new Error('Empty response, this should not happen'),
-      requestType
+      operationInputs.requestType,
     )
   } else {
     const severity = response.status === 401 || response.status === 403
@@ -537,12 +641,12 @@ async function doRequest(
       severity,
       ShakaError.Category.NETWORK,
       ShakaError.Code.BAD_HTTP_STATUS,
-      uri,
+      operationInputs.uri,
       response.status,
       '',
       {},
-      requestType,
-      uri
+      operationInputs.requestType,
+      operationInputs.uri,
     )
   }
 }
@@ -567,13 +671,25 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
   const videoPlaybackUstreamerConfig = base64ToU8(sabrData.ustreamerConfig)
   const clientInfo = deepCopy(sabrData.clientInfo)
 
-  let sabrUrl = sabrData.url
-
-  const updateSabrUrl = (newUrl) => {
-    sabrUrl = newUrl
+  /**
+   * @typedef SabrStreamState
+   * @type {object}
+   * @property {number} durationMs
+   * @property {number} requestNumber
+   * @property {Set<number>} activeSabrContextTypes
+   * @property {Map<number, SabrContextUpdate>} sabrContexts
+   * @property {?NextRequestPolicy} nextRequestPolicy
+   */
+  /** @type {SabrStreamState} */
+  const sabrStreamState = {
+    durationMs: Infinity,
+    requestNumber: 0,
+    activeSabrContextTypes: new Set(),
+    sabrContexts: new Map(),
+    nextRequestPolicy: undefined,
   }
 
-  shaka.net.NetworkingEngine.registerScheme('sabr', (uri, request, requestType, progressUpdated, headersReceived, config) => {
+  shaka.net.NetworkingEngine.registerScheme('sabr', (uri, request, requestType, _progressUpdated, headersReceived, _config) => {
     // lazily fetch it as the variable is only set after setupSabrScheme is called
     // but it will definitely exist when we receive a request here.
     const player = getPlayer()
@@ -641,7 +757,9 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
 
     const resolution = streamIsVideo ? parseInt(url.searchParams.get('resolution')) : undefined
 
-    /** @type {Protos.VideoPlaybackAbrRequest} */
+    const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(sabrStreamState)
+
+    /** @type {VideoPlaybackAbrRequest} */
     const requestData = {
       clientAbrState: {
         bandwidthEstimate: Math.round(player.getStats().estimatedBandwidth),
@@ -656,15 +774,17 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
         clientViewportHeight: playerHeight.value,
         clientViewportIsFlexible: false
       },
-      selectedAudioFormatIds: [audioFormatId],
-      selectedVideoFormatIds: [videoFormatId],
+      preferredAudioFormatIds: [audioFormatId],
+      preferredVideoFormatIds: [videoFormatId],
+      preferredSubtitleFormatIds: [],
       selectedFormatIds: isInit ? [] : [audioFormatId, videoFormatId],
       bufferedRanges,
       streamerContext: {
         poToken: poToken,
         clientInfo: clientInfo,
-        field5: [],
-        field6: []
+        sabrContexts,
+        unsentSabrContexts,
+        playbackCookie: sabrStreamState.nextRequestPolicy?.playbackCookie ? PlaybackCookie.encode(sabrStreamState.nextRequestPolicy.playbackCookie).finish() : undefined,
       },
       field1000: [],
       videoPlaybackUstreamerConfig,
@@ -673,49 +793,72 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     let body
 
     try {
-      body = Protos.VideoPlaybackAbrRequest.encode(requestData).finish()
+      body = VideoPlaybackAbrRequest.encode(requestData).finish()
     } catch (error) {
       console.error('Invalid VideoPlaybackAbrRequest data', requestData)
       throw error
     }
 
-    const controller = new AbortController()
+    const sequenceNumber = parseInt(url.searchParams.get('sq'))
+
+    /**
+     * Stores whatever state that should be updated across the whole "session"
+     * @type {OperationInputs}
+     */
+    const opInputs = {
+      uri,
+      request,
+      requestType,
+      headersReceived,
+
+      formatIdString,
+      isInit,
+      sequenceNumber,
+    }
+
+    const abortController = new AbortController()
 
     /** @type {RequestInit} */
     const init = {
       body,
       method: 'POST',
-      signal: controller.signal
+      headers: {
+        'content-type': 'application/x-protobuf',
+        'accept-encoding': 'identity',
+        accept: 'application/vnd.yt-ump',
+      },
+      signal: abortController.signal,
     }
 
+    /**
+     * Stores whatever state that should be updated across the whole "session"
+     * @type {AbortStatus}
+     */
     const abortStatus = {
       cancelled: false,
       timedOut: false,
       finished: false
     }
 
-    const sequenceNumber = parseInt(url.searchParams.get('sq'))
-
-    const pendingRequest = doRequest(
-      sabrUrl,
-      updateSabrUrl,
+    /**
+     * Stores whatever state that should be updated across the whole "session"
+     * @type {CurrentState}
+     */
+    const currentState = {
+      sabrUrl: sabrData.url,
       initDataCache,
-      uri,
-      formatIdString,
-      isInit,
-      sequenceNumber,
-      request,
-      requestType,
-      init,
-      requestData,
-      abortStatus,
-      controller,
-      headersReceived
-    )
+      abrRequest: requestData,
+      requestInit: init,
+      abortStatus: abortStatus,
+      abortController,
+      sabrStreamState,
+    }
+
+    const pendingRequest = doRequest(opInputs, currentState)
 
     const op = new AbortableOperation(pendingRequest, () => {
       abortStatus.cancelled = true
-      controller.abort()
+      abortController.abort()
       return Promise.resolve()
     })
 
@@ -724,7 +867,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       const timeout = setTimeout(() => {
         console.warn('setTimeout reached, timeoutMs: ', timeoutMs)
         abortStatus.timedOut = true
-        controller.abort()
+        abortController.abort()
       }, timeoutMs)
 
       op.finally(() => {
