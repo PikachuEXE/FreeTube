@@ -1,4 +1,4 @@
-import { base64ToU8, concatenateChunks } from 'googlevideo/utils'
+import { base64ToU8, concatenateChunks, wait } from 'googlevideo/utils'
 import { CompositeBuffer, UmpReader } from 'googlevideo/ump'
 import {
   UMPPartId,
@@ -214,21 +214,19 @@ async function doRequest(
   /** @type {Uint8Array[]} */
   const responseDataChunks = []
   let segmentComplete = false
+  let shouldRetry = false
 
   let invalidPoToken = false
   let error
-  /** @type {string | undefined} */
-  let redirectUrl
-  /** @type {number | undefined} */
-  let backoffTimeMs
   /** @type {import('googlevideo').Part[]} */
   const parts = []
   /** @type {({ type: string, data: {[string]: unknown }|string) }[]} */
   const debugEntries = []
-  /** @type {import('googlevideo/protos').PlaybackCookie | undefined} */
-  let playbackCookie
 
   try {
+    if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
+      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs))
+    }
     response = await fetch(currentState.sabrUrl, currentState.requestInit)
     debugEntries.push({
       type: 'response',
@@ -277,7 +275,7 @@ async function doRequest(
         parts.push(part)
         switch (part.type) {
           case UMPPartId.STREAM_PROTECTION_STATUS: {
-            const streamProtectionStatus = Protos.StreamProtectionStatus.decode(part.data.chunks[0])
+            const streamProtectionStatus = Protos.StreamProtectionStatus.decode(concatenateChunks(part.data.chunks))
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
             }
@@ -292,8 +290,9 @@ async function doRequest(
           }
           case UMPPartId.SABR_REDIRECT: {
             const sabrRedirect = Protos.SabrRedirect.decode(concatenateChunks(part.data.chunks))
-            redirectUrl = sabrRedirect.url
-            debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl } })
+            currentState.sabrUrl = sabrRedirect.url
+            shouldRetry = true
+            debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl: sabrRedirect.url } })
             break
           }
           case UMPPartId.MEDIA_HEADER: {
@@ -359,12 +358,12 @@ async function doRequest(
           case UMPPartId.NEXT_REQUEST_POLICY: {
             const nextRequestPolicy = NextRequestPolicy.decode(concatenateChunks(part.data.chunks))
             currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
-            if (nextRequestPolicy.playbackCookie) {
-              playbackCookie = nextRequestPolicy.playbackCookie
-              currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(playbackCookie).finish()
+            shouldRetry = true
+            if (nextRequestPolicy?.playbackCookie) {
+              currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(nextRequestPolicy?.playbackCookie).finish()
             }
-            if (nextRequestPolicy.backoffTimeMs != null && nextRequestPolicy.backoffTimeMs > 0) {
-              backoffTimeMs = nextRequestPolicy.backoffTimeMs
+            if (nextRequestPolicy?.backoffTimeMs) {
+              currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
             }
             debugEntries.push({
               type: 'NEXT_REQUEST_POLICY',
@@ -528,57 +527,45 @@ async function doRequest(
       fromCache: false,
       originalRequest: operationInputs.request,
     }
-  } else if (playbackCookie || currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs || redirectUrl) {
-    let shouldRetry = redirectUrl != null
-    if (redirectUrl != null) {
-      currentState.sabrUrl = redirectUrl
+  } else if (shouldRetry) {
+    console.warn('shouldRetry', {
+      abrRequest: currentState.abrRequest,
+      invalidPoToken,
+      parts,
+      debugEntries,
+
+      operationInputs,
+      currentState,
+    })
+
+    const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(currentState.sabrStreamState)
+
+    currentState.abrRequest.streamerContext.sabrContexts = sabrContexts
+    currentState.abrRequest.streamerContext.unsentSabrContexts = unsentSabrContexts
+
+    let body
+
+    try {
+      body = VideoPlaybackAbrRequest.encode(currentState.abrRequest).finish()
+    } catch (error) {
+      console.error('Invalid VideoPlaybackAbrRequest data', currentState.abrRequest)
+      throw error
     }
-    if (playbackCookie) {
-      console.warn('playbackCookie present', {
-        playbackCookie: playbackCookie,
-        abrRequest: currentState.abrRequest,
-        invalidPoToken,
-        redirectUrl,
-        parts,
-        debugEntries,
 
-        operationInputs,
-        currentState,
-      })
-      currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(playbackCookie).finish()
-
-      const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(currentState.sabrStreamState)
-
-      currentState.abrRequest.streamerContext.sabrContexts = sabrContexts
-      currentState.abrRequest.streamerContext.unsentSabrContexts = unsentSabrContexts
-
-      let body
-
-      try {
-        body = VideoPlaybackAbrRequest.encode(currentState.abrRequest).finish()
-      } catch (error) {
-        console.error('Invalid VideoPlaybackAbrRequest data', currentState.abrRequest)
-        throw error
-      }
-
-      currentState.requestInit = {
-        body,
-        method: 'POST',
-        headers: {
-          'content-type': 'application/x-protobuf',
-          'accept-encoding': 'identity',
-          accept: 'application/vnd.yt-ump',
-        },
-        signal: currentState.abortController.signal,
-      }
-      currentState.abortStatus.timedOut = false
-      shouldRetry = true
+    currentState.requestInit = {
+      body,
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-protobuf',
+        'accept-encoding': 'identity',
+        accept: 'application/vnd.yt-ump',
+      },
+      signal: currentState.abortController.signal,
     }
-    if (currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs) {
-      console.warn('backoffTimeMs present', {
-        backoffTimeMs: currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs,
-      })
-      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs))
+    currentState.abortStatus.timedOut = false
+
+    if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
+      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs))
       currentState.abortStatus.timedOut = false
     }
 
