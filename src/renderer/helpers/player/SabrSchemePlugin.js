@@ -3,6 +3,11 @@ import { CompositeBuffer, UmpReader } from 'googlevideo/ump'
 import {
   UMPPartId,
   VideoPlaybackAbrRequest,
+  StreamProtectionStatus,
+  SabrError,
+  SabrRedirect,
+  MediaHeader,
+  FormatInitializationMetadata,
   SabrContextSendingPolicy,
   SabrContextUpdate,
   SabrContextWritePolicy,
@@ -11,7 +16,6 @@ import {
   SnackbarMessage,
   PlaybackStartPolicy,
 } from 'googlevideo/protos'
-import * as Protos from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
 import { deepCopy } from '../utils'
@@ -181,17 +185,10 @@ function prepareSabrContexts(sabrStreamState) {
 }
 
 /**
- * @typedef DecodeFunc
- * @param {Uint8Array} data
- */
-/**
- * @typedef Decoder
- * @type {object}
- * @property {DecodeFunc} decode
- */
-/**
+ * @template T
  * @param {import('googlevideo/shared-types').Part} part
- * @param {Decoder} decoder
+ * @param {{ decode: (data: Uint8Array) => T }} decoder
+ * @returns {T | undefined}
  */
 function decodePart(part, decoder) {
   if (!part.data.chunks.length) return undefined
@@ -278,7 +275,7 @@ async function doRequest(
         parts.push(part)
         switch (part.type) {
           case UMPPartId.STREAM_PROTECTION_STATUS: {
-            const streamProtectionStatus = Protos.StreamProtectionStatus.decode(concatenateChunks(part.data.chunks))
+            const streamProtectionStatus = decodePart(part, StreamProtectionStatus)
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
             }
@@ -286,13 +283,13 @@ async function doRequest(
             break
           }
           case UMPPartId.SABR_ERROR: {
-            const sabrError = Protos.SabrError.decode(concatenateChunks(part.data.chunks))
+            const sabrError = decodePart(part, SabrError)
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
             debugEntries.push({ type: 'SABR_ERROR', data: { error } })
             break
           }
           case UMPPartId.SABR_REDIRECT: {
-            const sabrRedirect = Protos.SabrRedirect.decode(concatenateChunks(part.data.chunks))
+            const sabrRedirect = decodePart(part, SabrRedirect)
             currentState.sabrUrl = sabrRedirect.url
             shouldRetry = true
             debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl: sabrRedirect.url } })
@@ -300,7 +297,7 @@ async function doRequest(
           }
           case UMPPartId.MEDIA_HEADER: {
             if (mediaHeaderId === undefined) {
-              const mediaHeader = Protos.MediaHeader.decode(concatenateChunks(part.data.chunks))
+              const mediaHeader = decodePart(part, MediaHeader)
               debugEntries.push({
                 type: 'MEDIA_HEADER',
                 mediaHeaderId,
@@ -359,7 +356,7 @@ async function doRequest(
             break
           }
           case UMPPartId.NEXT_REQUEST_POLICY: {
-            const nextRequestPolicy = NextRequestPolicy.decode(concatenateChunks(part.data.chunks))
+            const nextRequestPolicy = decodePart(part, NextRequestPolicy)
             currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
             shouldRetry = true
             if (nextRequestPolicy?.playbackCookie) {
@@ -380,13 +377,13 @@ async function doRequest(
             debugEntries.push({
               type: 'FORMAT_INITIALIZATION_METADATA',
               data: {
-                formatInitializationMetadata: Protos.FormatInitializationMetadata.decode(concatenateChunks(part.data.chunks)),
+                formatInitializationMetadata: decodePart(part, FormatInitializationMetadata),
               },
             })
             break
           }
           case UMPPartId.SABR_CONTEXT_UPDATE: {
-            const sabrContextUpdate = SabrContextUpdate.decode(concatenateChunks(part.data.chunks))
+            const sabrContextUpdate = decodePart(part, SabrContextUpdate)
             debugEntries.push({
               type: 'SABR_CONTEXT_UPDATE',
               data: {
@@ -415,7 +412,7 @@ async function doRequest(
             break
           }
           case UMPPartId.SABR_CONTEXT_SENDING_POLICY: {
-            const sabrContextSendingPolicy = SabrContextSendingPolicy.decode(concatenateChunks(part.data.chunks))
+            const sabrContextSendingPolicy = decodePart(part, SabrContextSendingPolicy)
             debugEntries.push({
               type: 'SABR_CONTEXT_SENDING_POLICY',
               data: {
@@ -457,7 +454,7 @@ async function doRequest(
             break
           }
           case UMPPartId.PLAYBACK_START_POLICY: {
-            const playbackStartPolicy = PlaybackStartPolicy.decode(concatenateChunks(part.data.chunks))
+            const playbackStartPolicy = decodePart(part, PlaybackStartPolicy)
             debugEntries.push({
               type: 'PLAYBACK_START_POLICY',
               data: {
@@ -467,7 +464,7 @@ async function doRequest(
             break
           }
           case UMPPartId.SNACKBAR_MESSAGE: {
-            const snackbarMessage = SnackbarMessage.decode(concatenateChunks(part.data.chunks))
+            const snackbarMessage = decodePart(part, SnackbarMessage)
             debugEntries.push({
               type: 'SNACKBAR_MESSAGE',
               data: {
@@ -591,6 +588,7 @@ async function doRequest(
     currentState.abortStatus.timedOut = false
 
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
+      console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
       await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs))
       currentState.abortStatus.timedOut = false
     }
