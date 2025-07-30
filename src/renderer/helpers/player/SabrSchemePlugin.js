@@ -8,6 +8,8 @@ import {
   SabrContextWritePolicy,
   NextRequestPolicy,
   PlaybackCookie,
+  SnackbarMessage,
+  PlaybackStartPolicy,
 } from 'googlevideo/protos'
 import * as Protos from 'googlevideo/protos'
 import shaka from 'shaka-player'
@@ -34,6 +36,7 @@ const ShakaError = shaka.util.Error
  * @type {object}
  * @property {boolean} cancelled
  * @property {boolean} timedOut
+ * @property {boolean} playerReloadRequested
  * @property {boolean} finished
  */
 /**
@@ -443,10 +446,33 @@ async function doRequest(
             }
             break
           }
-          case 67: {
+          case UMPPartId.RELOAD_PLAYER_RESPONSE: {
+            debugEntries.push({
+              type: 'RELOAD_PLAYER_RESPONSE',
+              data: {},
+            })
+            // Whole video cannot be played
+            currentState.sabrStreamState.playerReloadRequested = true
+            currentState.abortController.abort()
+            break
+          }
+          case UMPPartId.PLAYBACK_START_POLICY: {
+            const playbackStartPolicy = PlaybackStartPolicy.decode(concatenateChunks(part.data.chunks))
+            debugEntries.push({
+              type: 'PLAYBACK_START_POLICY',
+              data: {
+                playbackStartPolicy,
+              },
+            })
+            break
+          }
+          case UMPPartId.SNACKBAR_MESSAGE: {
+            const snackbarMessage = SnackbarMessage.decode(concatenateChunks(part.data.chunks))
             debugEntries.push({
               type: 'SNACKBAR_MESSAGE',
-              data: {},
+              data: {
+                snackbarMessage,
+              },
             })
             break
           }
@@ -666,6 +692,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
    * @property {Set<number>} activeSabrContextTypes
    * @property {Map<number, SabrContextUpdate>} sabrContexts
    * @property {?NextRequestPolicy} nextRequestPolicy
+   * @property {boolean} playerReloadRequested
    */
   /** @type {SabrStreamState} */
   const sabrStreamState = {
@@ -674,9 +701,24 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     activeSabrContextTypes: new Set(),
     sabrContexts: new Map(),
     nextRequestPolicy: undefined,
+    playerReloadRequested: false,
   }
 
   shaka.net.NetworkingEngine.registerScheme('sabr', (uri, request, requestType, _progressUpdated, headersReceived, _config) => {
+    if (sabrStreamState.playerReloadRequested) {
+      console.error('playerReloadRequested', {
+        sabrStreamState,
+      })
+      throw new ShakaError(
+        ShakaError.Severity.CRITICAL,
+        ShakaError.Category.PLAYER,
+        ShakaError.Code.CONTENT_NOT_LOADED,
+        uri,
+        new Error('Player Reload Requested'),
+        requestType,
+      )
+    }
+
     // lazily fetch it as the variable is only set after setupSabrScheme is called
     // but it will definitely exist when we receive a request here.
     const player = getPlayer()
@@ -824,7 +866,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     const abortStatus = {
       cancelled: false,
       timedOut: false,
-      finished: false
+      finished: false,
     }
 
     /**
