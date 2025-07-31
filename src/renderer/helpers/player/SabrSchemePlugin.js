@@ -15,6 +15,7 @@ import {
   PlaybackCookie,
   SnackbarMessage,
   PlaybackStartPolicy,
+  RequestCancellationPolicy,
 } from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
@@ -55,6 +56,7 @@ const ShakaError = shaka.util.Error
  * @property {AbortStatus} abortStatus
  * @property {AbortController} abortController
  * @property {SabrStreamState} sabrStreamState
+ * @property {?TimeoutController} timeoutController
  */
 
 /**
@@ -201,6 +203,30 @@ function decodePart(part, decoder) {
 }
 
 /**
+ * @typedef TimeoutController
+ * @type {object}
+ * @property {() => void} resetTimeout
+ * @property {() => void} clearTimeout
+ */
+/**
+ * @param {(args: void) => void} callback
+ * @param {number} timeoutMs
+ * @return TimeoutController
+ */
+function createTimeoutController(callback, timeoutMs) {
+  return {
+    _timeout: setTimeout(callback, timeoutMs),
+    resetTimeout() {
+      this.clearTimeout()
+      this._timeout = setTimeout(callback, timeoutMs)
+    },
+    clearTimeout() {
+      clearTimeout(this._timeout)
+    },
+  }
+}
+
+/**
  * @param {OperationInputs} operationInputs - readonly
  * @param {CurrentState} currentState - can be updated
  */
@@ -225,7 +251,10 @@ async function doRequest(
 
   try {
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
-      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs))
+      console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
+      await wait(currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
+      // Must reset AFTER waiting to avoid requested aborted
+      currentState.timeoutController.resetTimeout()
     }
     response = await fetch(currentState.sabrUrl, currentState.requestInit)
     debugEntries.push({
@@ -259,12 +288,12 @@ async function doRequest(
     })
 
     while (!readObj.done && !currentState.abortStatus.finished) {
-      debugEntries.push({
-        type: 'whileLoopStart',
-        data: {
-          chunkedDataBuffer,
-        }
-      })
+      // debugEntries.push({
+      //   type: 'whileLoopStart',
+      //   data: {
+      //     chunkedDataBuffer,
+      //   }
+      // })
       if (chunkedDataBuffer) {
         chunkedDataBuffer.append(readObj.value)
       } else {
@@ -473,6 +502,24 @@ async function doRequest(
             })
             break
           }
+          case UMPPartId.REQUEST_CANCELLATION_POLICY: {
+            const requestCancellationPolicy = decodePart(part, RequestCancellationPolicy)
+            debugEntries.push({
+              type: 'REQUEST_CANCELLATION_POLICY',
+              data: {
+                requestCancellationPolicy,
+              },
+            })
+            break
+          }
+          case UMPPartId.SABR_ACK:
+          case UMPPartId.CACHE_LOAD_POLICY: {
+            debugEntries.push({
+              type: 'CACHE_LOAD_POLICY',
+              data: {},
+            })
+            break
+          }
           default: {
             debugEntries.push({
               type: 'unhandled',
@@ -482,13 +529,13 @@ async function doRequest(
         }
       })
 
-      debugEntries.push({
-        type: 'whileLoopNearEnd',
-        data: {
-          abortStatus: currentState.abortStatus,
-          remainingData,
-        }
-      })
+      // debugEntries.push({
+      //   type: 'whileLoopNearEnd',
+      //   data: {
+      //     abortStatus: currentState.abortStatus,
+      //     remainingData,
+      //   }
+      // })
       if (!currentState.abortStatus.finished) {
         if (remainingData) {
           chunkedDataBuffer = remainingData.data
@@ -587,26 +634,8 @@ async function doRequest(
     }
     currentState.abortStatus.timedOut = false
 
-    if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
-      console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
-      await new Promise(resolve => setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs))
-      currentState.abortStatus.timedOut = false
-    }
-
     currentState.abortStatus.finished = false
-    if (shouldRetry) {
-      return doRequest(operationInputs, currentState)
-    }
-
-    throw new ShakaError(
-      ShakaError.Severity.CRITICAL,
-      ShakaError.Category.NETWORK,
-      // Must be the same as the one in `Watch.js` to catch the error
-      ShakaError.Code.LOAD_INTERRUPTED,
-      operationInputs.uri,
-      new Error('new playbackCookie present but empty'),
-      operationInputs.requestType,
-    )
+    return doRequest(operationInputs, currentState)
   } else if (invalidPoToken) {
     throw new ShakaError(
       ShakaError.Severity.CRITICAL,
@@ -867,6 +896,16 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       finished: false,
     }
 
+    const timeoutMs = request.retryParameters.timeout
+    let timeoutController = null
+    if (timeoutMs) {
+      timeoutController = createTimeoutController(() => {
+        console.warn('setTimeout reached, timeoutMs: ', timeoutMs)
+        abortStatus.timedOut = true
+        abortController.abort()
+      }, timeoutMs)
+    }
+
     /**
      * Stores whatever state that should be updated across the whole "session"
      * @type {CurrentState}
@@ -879,6 +918,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       abortStatus: abortStatus,
       abortController,
       sabrStreamState,
+      timeoutController,
     }
 
     const pendingRequest = doRequest(opInputs, currentState)
@@ -889,16 +929,9 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       return Promise.resolve()
     })
 
-    const timeoutMs = request.retryParameters.timeout
-    if (timeoutMs) {
-      const timeout = setTimeout(() => {
-        console.warn('setTimeout reached, timeoutMs: ', timeoutMs)
-        abortStatus.timedOut = true
-        abortController.abort()
-      }, timeoutMs)
-
+    if (timeoutController) {
       op.finally(() => {
-        clearTimeout(timeout)
+        timeoutController.clearTimeout()
       })
     }
 
