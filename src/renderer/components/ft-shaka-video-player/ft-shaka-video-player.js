@@ -23,6 +23,7 @@ import {
   showToast,
   writeFileWithPicker,
   throttle,
+  debounce,
 } from '../../helpers/utils'
 import { MANIFEST_TYPE_SABR } from '../../helpers/player/SabrManifestParser'
 import { setupSabrScheme } from '../../helpers/player/SabrSchemePlugin'
@@ -1246,11 +1247,15 @@ export default defineComponent({
     /** @type {shaka.extern.Manifest | undefined} */
     let sabrManifest
 
-    /** @type {() => void | undefined} */
-    let cleanupSabrScheme
+    /** @type {import('../../helpers/player/SabrSchemePlugin').SabrStream | undefined} */
+    let sabrStream
 
     if (process.env.SUPPORTS_LOCAL_API && props.sabrData) {
-      cleanupSabrScheme = /** @__NOINLINE__ */ setupSabrScheme(props.sabrData, () => player, () => sabrManifest, playerWidth, playerHeight)
+      sabrStream = /** @__NOINLINE__ */ setupSabrScheme(props.sabrData, () => player, () => sabrManifest, playerWidth, playerHeight)
+      // Since there can be 2 requests at the same time (video + audio), we debounce the listener to only show the message once
+      sabrStream.on('backoff-requested', debounce(({ backoffMs }) => {
+        showToast(`Backoff from server received: ${backoffMs / 1000}s`)
+      }, 10))
     }
 
     // #endregion SABR
@@ -3048,8 +3053,8 @@ export default defineComponent({
         player = null
       }
 
-      if (process.env.SUPPORTS_LOCAL_API && cleanupSabrScheme) {
-        cleanupSabrScheme()
+      if (process.env.SUPPORTS_LOCAL_API && sabrStream) {
+        sabrStream.cleanup()
       }
 
       // shaka-player doesn't clear these itself, which prevents shaka.ui.Overlay from being garbage collected

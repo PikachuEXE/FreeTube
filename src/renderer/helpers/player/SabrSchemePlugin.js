@@ -1,4 +1,4 @@
-import { base64ToU8, concatenateChunks, wait } from 'googlevideo/utils'
+import { base64ToU8, concatenateChunks, wait, EventEmitterLike } from 'googlevideo/utils'
 import { CompositeBuffer, UmpReader } from 'googlevideo/ump'
 import {
   UMPPartId,
@@ -58,6 +58,7 @@ const ShakaError = shaka.util.Error
  * @property {AbortController} abortController
  * @property {SabrStreamState} sabrStreamState
  * @property {?TimeoutController} timeoutController
+ * @property {?EventEmitterLike} eventEmitter
  */
 
 /**
@@ -253,6 +254,7 @@ async function doRequest(
   try {
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
       console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
+      currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
       await wait(currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
       // Must reset AFTER waiting to avoid requested aborted
       currentState.timeoutController.resetTimeout()
@@ -698,13 +700,22 @@ async function doRequest(
 }
 
 /**
+ * @typedef SabrStream
+ * @type {object}
+ * @property {(e: 'backoff-requested', cb: ({backoffMs: number}) => void) => void} on
+ * @property {() => void | undefined} cleanup
+ */
+/**
  * @param {import('../../views/Watch/Watch').SabrData} sabrData
  * @param {() => shaka.Player} getPlayer
  * @param {() => shaka.extern.Manifest} getManifest
  * @param {import('vue').ComputedRef<number>} playerWidth
  * @param {import('vue').ComputedRef<number>} playerHeight
+ * @return SabrStream
  */
 export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, playerHeight) {
+  const eventEmitter = new EventEmitterLike()
+
   /**
    * Caches the init data until the video ends
    * that way changing qualities and between audio and DASH
@@ -925,6 +936,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       abortController,
       sabrStreamState,
       timeoutController,
+      eventEmitter,
     }
 
     const pendingRequest = doRequest(opInputs, currentState)
@@ -949,5 +961,10 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     initDataCache.clear()
   }
 
-  return cleanup
+  return {
+    on(eventName, callback) {
+      eventEmitter.on(eventName, callback)
+    },
+    cleanup,
+  }
 }
