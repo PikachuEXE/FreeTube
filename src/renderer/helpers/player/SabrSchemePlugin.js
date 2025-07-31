@@ -1,4 +1,4 @@
-import { base64ToU8, concatenateChunks, wait, EventEmitterLike } from 'googlevideo/utils'
+import { base64ToU8, concatenateChunks, EventEmitterLike } from 'googlevideo/utils'
 import { CompositeBuffer, UmpReader } from 'googlevideo/ump'
 import {
   UMPPartId,
@@ -255,7 +255,11 @@ async function doRequest(
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
       console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
       currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
-      await wait(currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
+      // Wait but can be aborted
+      await new Promise((resolve, reject) => {
+        setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
+        currentState.abortController.signal.addEventListener('abort', reject)
+      })
       // Must reset AFTER waiting to avoid requested aborted
       currentState.timeoutController.resetTimeout()
     }

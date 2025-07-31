@@ -2662,8 +2662,9 @@ export default defineComponent({
       container.value.classList.add('no-cursor')
 
       await performFirstLoad()
+      // Whatever runs after `performFirstLoad` might be after switching to another page due to SABR backoff
 
-      player.addEventListener('ratechange', () => {
+      player?.addEventListener('ratechange', () => {
         emit('playback-rate-updated', player.getPlaybackRate())
       })
     })
