@@ -16,6 +16,7 @@ import {
   SnackbarMessage,
   PlaybackStartPolicy,
   RequestCancellationPolicy,
+  ReloadPlaybackContext,
 } from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
@@ -473,9 +474,14 @@ async function doRequest(
             break
           }
           case UMPPartId.RELOAD_PLAYER_RESPONSE: {
+            const reloadPlaybackContext = this.decodePart(part, ReloadPlaybackContext)
+            if (!reloadPlaybackContext) break
+
             debugEntries.push({
               type: 'RELOAD_PLAYER_RESPONSE',
-              data: {},
+              data: {
+                reloadPlaybackContext,
+              },
             })
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
