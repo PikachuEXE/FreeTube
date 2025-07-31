@@ -1253,9 +1253,12 @@ export default defineComponent({
     if (process.env.SUPPORTS_LOCAL_API && props.sabrData) {
       sabrStream = /** @__NOINLINE__ */ setupSabrScheme(props.sabrData, () => player, () => sabrManifest, playerWidth, playerHeight)
       // Since there can be 2 requests at the same time (video + audio), we debounce the listener to only show the message once
-      sabrStream.on('backoff-requested', debounce(({ backoffMs }) => {
+      sabrStream.onBackoffRequested(debounce(({ backoffMs }) => {
         showToast(`Backoff from server received: ${backoffMs / 1000}s`)
-      }, 10))
+      }, 1000))
+      sabrStream.onReload(({ reloadPlaybackContext }) => {
+        console.warn('reload event detected in ft-shaka-video-player', { reloadPlaybackContext })
+      })
     }
 
     // #endregion SABR

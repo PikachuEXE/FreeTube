@@ -492,6 +492,7 @@ async function doRequest(
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
             currentState.abortController.abort()
+            currentState.eventEmitter.emit('reload', { reloadPlaybackContext })
             break
           }
           case UMPPartId.PLAYBACK_START_POLICY: {
@@ -706,7 +707,8 @@ async function doRequest(
 /**
  * @typedef SabrStream
  * @type {object}
- * @property {(e: 'backoff-requested', cb: ({backoffMs: number}) => void) => void} on
+ * @property {(cb: ({backoffMs: number}) => void) => void} onBackoffRequested
+ * @property {(cb: ({reloadPlaybackContext: ReloadPlaybackContext}) => void) => void} onReload
  * @property {() => void | undefined} cleanup
  */
 /**
@@ -966,8 +968,11 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
   }
 
   return {
-    on(eventName, callback) {
-      eventEmitter.on(eventName, callback)
+    onBackoffRequested(callback) {
+      eventEmitter.on('backoff-requested', callback)
+    },
+    onReload(callback) {
+      eventEmitter.on('reload', callback)
     },
     cleanup,
   }
