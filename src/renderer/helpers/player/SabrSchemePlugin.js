@@ -480,7 +480,7 @@ async function doRequest(
             break
           }
           case UMPPartId.RELOAD_PLAYER_RESPONSE: {
-            const reloadPlaybackContext = this.decodePart(part, ReloadPlaybackContext)
+            const reloadPlaybackContext = decodePart(part, ReloadPlaybackContext)
             if (!reloadPlaybackContext) break
 
             debugEntries.push({
