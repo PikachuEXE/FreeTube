@@ -1891,6 +1891,11 @@ export default defineComponent({
       this.startNextVideoInPip = uiState.startNextVideoInPip
     },
 
+    onPlayerReloadRequested() {
+      showToast('Reloading player according to SABR request')
+      this.reloadView()
+    },
+
     ...mapActions([
       'updateHistory',
       'updateWatchProgress',

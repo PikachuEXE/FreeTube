@@ -51,6 +51,7 @@
           @playback-rate-updated="updatePlaybackRate"
           @skip-to-next="handleSkipToNext"
           @skip-to-prev="handleSkipToPrev"
+          @player-reload-requested="onPlayerReloadRequested"
         />
         <div
           v-if="!isLoading && (isUpcoming || errorMessage)"

@@ -162,6 +162,7 @@ export default defineComponent({
     'playback-rate-updated',
     'skip-to-next',
     'skip-to-prev',
+    'player-reload-requested',
   ],
   setup: function (props, { emit, expose }) {
     const { locale, t } = useI18n()
@@ -1256,8 +1257,9 @@ export default defineComponent({
       sabrStream.onBackoffRequested(debounce(({ backoffMs }) => {
         showToast(`Backoff from server received: ${backoffMs / 1000}s`)
       }, 1000))
-      sabrStream.onReload(({ reloadPlaybackContext }) => {
-        console.warn('reload event detected in ft-shaka-video-player', { reloadPlaybackContext })
+      sabrStream.onReloadOnce(() => {
+        console.warn('reload event detected in ft-shaka-video-player')
+        emit('player-reload-requested')
       })
     }
 

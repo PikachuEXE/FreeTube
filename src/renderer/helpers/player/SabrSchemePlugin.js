@@ -525,14 +525,6 @@ async function doRequest(
             })
             break
           }
-          case UMPPartId.SABR_ACK:
-          case UMPPartId.CACHE_LOAD_POLICY: {
-            debugEntries.push({
-              type: 'CACHE_LOAD_POLICY',
-              data: {},
-            })
-            break
-          }
           default: {
             debugEntries.push({
               type: 'unhandled',
@@ -708,7 +700,7 @@ async function doRequest(
  * @typedef SabrStream
  * @type {object}
  * @property {(cb: ({backoffMs: number}) => void) => void} onBackoffRequested
- * @property {(cb: ({reloadPlaybackContext: ReloadPlaybackContext}) => void) => void} onReload
+ * @property {(cb: () => void) => void} onReloadOnce
  * @property {() => void | undefined} cleanup
  */
 /**
@@ -971,8 +963,8 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
     onBackoffRequested(callback) {
       eventEmitter.on('backoff-requested', callback)
     },
-    onReload(callback) {
-      eventEmitter.on('reload', callback)
+    onReloadOnce(callback) {
+      eventEmitter.once('reload', callback)
     },
     cleanup,
   }
