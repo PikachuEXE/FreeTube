@@ -1250,15 +1250,31 @@ export default defineComponent({
 
     /** @type {import('../../helpers/player/SabrSchemePlugin').SabrStream | undefined} */
     let sabrStream
+    /** @type {AbortController | undefined} */
+    let sabrAbortController
 
     if (process.env.SUPPORTS_LOCAL_API && props.sabrData) {
       sabrStream = /** @__NOINLINE__ */ setupSabrScheme(props.sabrData, () => player, () => sabrManifest, playerWidth, playerHeight)
+      sabrAbortController = new AbortController()
       // Since there can be 2 requests at the same time (video + audio), we debounce the listener to only show the message once
       sabrStream.onBackoffRequested(debounce(({ backoffMs }) => {
-        showToast(`Backoff from server received: ${backoffMs / 1000}s`)
+        showToast(
+          ({ elapsedMs, remainingMs }) => {
+            if (backoffMs <= 4000 || elapsedMs <= 4000) {
+              return `Waiting for ${backoffMs / 1000}s as SABR backoff time`
+            }
+
+            return `Remaining SABR backoff time: ${remainingMs / 1000}s`
+          },
+          // So that we don't see last countdown text like 0/N
+          backoffMs,
+          null,
+          sabrAbortController.signal,
+        )
       }, 1000))
       sabrStream.onReloadOnce(() => {
         console.warn('reload event detected in ft-shaka-video-player')
+        sabrAbortController.abort()
         emit('player-reload-requested')
       })
     }
@@ -3061,6 +3077,7 @@ export default defineComponent({
 
       if (process.env.SUPPORTS_LOCAL_API && sabrStream) {
         sabrStream.cleanup()
+        sabrAbortController?.abort()
       }
 
       // shaka-player doesn't clear these itself, which prevents shaka.ui.Overlay from being garbage collected
