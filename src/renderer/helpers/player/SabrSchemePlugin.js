@@ -53,6 +53,7 @@ const ShakaError = shaka.util.Error
  * @property {Map<number, SabrContextUpdate>} sabrContexts
  * @property {Set<number>} activeSabrContextTypes
  * @property {VideoPlaybackAbrRequest} abrRequest
+ * @property {?PlaybackCookie} playbackCookie - For debugging
  * @property {RequestInit} requestInit
  * @property {AbortStatus} abortStatus
  * @property {AbortController} abortController
@@ -397,6 +398,8 @@ async function doRequest(
             shouldRetry = true
             if (nextRequestPolicy?.playbackCookie) {
               currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(nextRequestPolicy?.playbackCookie).finish()
+              // For debugging
+              currentState.playbackCookie = nextRequestPolicy?.playbackCookie
             }
             if (nextRequestPolicy?.backoffTimeMs) {
               currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
@@ -929,6 +932,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       sabrUrl: sabrData.url,
       initDataCache,
       abrRequest: requestData,
+      playbackCookie: undefined,
       requestInit: init,
       abortStatus: abortStatus,
       abortController,
