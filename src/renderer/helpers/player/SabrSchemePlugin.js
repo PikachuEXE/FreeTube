@@ -321,20 +321,26 @@ async function doRequest(
           }
           case UMPPartId.SABR_ERROR: {
             const sabrError = decodePart(part, SabrError)
+            debugEntries.push({ type: 'SABR_ERROR', data: { sabrError } })
+            if (!sabrError) break
+
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
-            debugEntries.push({ type: 'SABR_ERROR', data: { error } })
             break
           }
           case UMPPartId.SABR_REDIRECT: {
             const sabrRedirect = decodePart(part, SabrRedirect)
+            debugEntries.push({ type: 'SABR_REDIRECT', data: { sabrRedirect: sabrRedirect } })
+            if (!sabrRedirect) break
+
             currentState.sabrUrl = sabrRedirect.url
             shouldRetry = true
-            debugEntries.push({ type: 'SABR_REDIRECT', data: { redirectUrl: sabrRedirect.url } })
             break
           }
           case UMPPartId.MEDIA_HEADER: {
             if (mediaHeaderId === undefined) {
               const mediaHeader = decodePart(part, MediaHeader)
+              if (!mediaHeader) break
+
               debugEntries.push({
                 type: 'MEDIA_HEADER',
                 mediaHeaderId,
@@ -394,6 +400,14 @@ async function doRequest(
           }
           case UMPPartId.NEXT_REQUEST_POLICY: {
             const nextRequestPolicy = decodePart(part, NextRequestPolicy)
+            debugEntries.push({
+              type: 'NEXT_REQUEST_POLICY',
+              data: {
+                nextRequestPolicy: nextRequestPolicy,
+              },
+            })
+            if (!nextRequestPolicy) break
+
             currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
             shouldRetry = true
             if (nextRequestPolicy?.playbackCookie) {
@@ -404,12 +418,6 @@ async function doRequest(
             if (nextRequestPolicy?.backoffTimeMs) {
               currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
             }
-            debugEntries.push({
-              type: 'NEXT_REQUEST_POLICY',
-              data: {
-                nextRequestPolicy: nextRequestPolicy,
-              },
-            })
             break
           }
           case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
