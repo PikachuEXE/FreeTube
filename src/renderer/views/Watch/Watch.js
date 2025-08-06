@@ -308,6 +308,10 @@ export default defineComponent({
       // `this.$refs.player?.hasLoaded` cannot be used in computed property
       return !this.isLoading
     },
+
+    sabrBackendEnabled: function () {
+      return this.$store.getters.getSabrBackendEnabled
+    },
   },
   watch: {
     async $route() {
@@ -850,11 +854,7 @@ export default defineComponent({
               })
               ?.projection_type ?? null
 
-            if (forceDash) {
-              console.warn('getVideoInformationLocal > forceDash = true')
-              this.manifestSrc = await this.createLocalDashManifest(result)
-              this.manifestMimeType = MANIFEST_TYPE_DASH
-            } else if (result.streaming_data.server_abr_streaming_url) {
+            if (result.streaming_data.server_abr_streaming_url && this.sabrBackendEnabled && !forceDash) {
               console.warn('getVideoInformationLocal > using SABR')
               const storyboards = storyboard
                 ? [{
@@ -872,6 +872,10 @@ export default defineComponent({
 
               this.manifestSrc = this.createLocalSabrManifest(result, poToken, clientInfo, storyboards)
               this.manifestMimeType = MANIFEST_TYPE_SABR
+            } else if (result.streaming_data.adaptive_formats[0].freeTubeUrl) {
+              console.warn('getVideoInformationLocal > using Dash (Old)')
+              this.manifestSrc = await this.createLocalDashManifest(result)
+              this.manifestMimeType = MANIFEST_TYPE_DASH
             } else {
               this.manifestSrc = null
               this.enableLegacyFormat()
