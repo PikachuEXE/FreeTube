@@ -247,6 +247,9 @@ async function doRequest(
   // For debug
   /** @type {string[]} */
   const shouldRetryReasons = []
+  // For debug
+  /** @type {object} */
+  const shouldRetryAdditionalObjects = {}
 
   let invalidPoToken = false
   let error
@@ -410,19 +413,18 @@ async function doRequest(
                 nextRequestPolicy: nextRequestPolicy,
               },
             })
-            if (!nextRequestPolicy) break
+
+            shouldRetry = true
+            shouldRetryAdditionalObjects.nextRequestPolicyOld = currentState.sabrStreamState.nextRequestPolicy
+            shouldRetryAdditionalObjects.nextRequestPolicyNew = nextRequestPolicy
+            shouldRetryReasons.push('nextRequestPolicy')
 
             currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
-            shouldRetry = true
-            shouldRetryReasons.push('nextRequestPolicy')
-            if (nextRequestPolicy?.playbackCookie) {
-              currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(nextRequestPolicy?.playbackCookie).finish()
-              // For debugging
-              currentState.playbackCookie = nextRequestPolicy?.playbackCookie
-            }
-            if (nextRequestPolicy?.backoffTimeMs) {
-              currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
-            }
+            currentState.abrRequest.streamerContext.playbackCookie = nextRequestPolicy?.playbackCookie ? PlaybackCookie.encode(nextRequestPolicy.playbackCookie).finish() : undefined
+            // For debugging
+            currentState.playbackCookie = nextRequestPolicy?.playbackCookie
+
+            currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
             break
           }
           case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
@@ -619,7 +621,7 @@ async function doRequest(
       originalRequest: operationInputs.request,
     }
   } else if (shouldRetry) {
-    console.warn(`shouldRetry<${shouldRetryReasons.join(',')}>`, {
+    console.warn(`shouldRetry<${shouldRetryReasons.join(',')}>`, Object.assign({
       abrRequest: currentState.abrRequest,
       invalidPoToken,
       parts,
@@ -627,7 +629,7 @@ async function doRequest(
 
       operationInputs,
       currentState,
-    })
+    }, shouldRetryAdditionalObjects))
 
     const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(currentState.sabrStreamState)
 
