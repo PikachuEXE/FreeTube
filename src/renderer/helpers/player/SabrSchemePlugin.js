@@ -244,6 +244,9 @@ async function doRequest(
   const responseDataChunks = []
   let segmentComplete = false
   let shouldRetry = false
+  // For debug
+  /** @type {string[]} */
+  const shouldRetryReasons = []
 
   let invalidPoToken = false
   let error
@@ -334,6 +337,7 @@ async function doRequest(
 
             currentState.sabrUrl = sabrRedirect.url
             shouldRetry = true
+            shouldRetryReasons.push('redirect')
             break
           }
           case UMPPartId.MEDIA_HEADER: {
@@ -410,6 +414,7 @@ async function doRequest(
 
             currentState.sabrStreamState.nextRequestPolicy = nextRequestPolicy
             shouldRetry = true
+            shouldRetryReasons.push('nextRequestPolicy')
             if (nextRequestPolicy?.playbackCookie) {
               currentState.abrRequest.streamerContext.playbackCookie = PlaybackCookie.encode(nextRequestPolicy?.playbackCookie).finish()
               // For debugging
@@ -614,7 +619,7 @@ async function doRequest(
       originalRequest: operationInputs.request,
     }
   } else if (shouldRetry) {
-    console.warn('shouldRetry', {
+    console.warn(`shouldRetry<${shouldRetryReasons.join(',')}>`, {
       abrRequest: currentState.abrRequest,
       invalidPoToken,
       parts,
