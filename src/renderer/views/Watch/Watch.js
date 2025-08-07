@@ -309,8 +309,8 @@ export default defineComponent({
       return !this.isLoading
     },
 
-    sabrBackendEnabled: function () {
-      return this.$store.getters.getSabrBackendEnabled
+    sabrEnabled: function () {
+      return this.$store.getters.getSabrEnabled
     },
   },
   watch: {
@@ -854,7 +854,7 @@ export default defineComponent({
               })
               ?.projection_type ?? null
 
-            if (result.streaming_data.server_abr_streaming_url && this.sabrBackendEnabled && !forceDash) {
+            if (result.streaming_data.server_abr_streaming_url && this.sabrEnabled && !forceDash) {
               console.warn('getVideoInformationLocal > using SABR')
               const storyboards = storyboard
                 ? [{

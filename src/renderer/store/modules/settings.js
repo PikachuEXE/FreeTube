@@ -168,7 +168,7 @@ const state = {
   defaultSkipInterval: 5,
   defaultViewingMode: 'default',
   defaultVideoFormat: 'dash',
-  sabrBackendEnabled: false,
+  sabrEnabled: false,
   disableSmoothScrolling: false,
   displayVideoPlayButton: false,
   enableSearchSuggestions: true,

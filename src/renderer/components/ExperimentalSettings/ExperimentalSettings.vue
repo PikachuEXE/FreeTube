@@ -21,9 +21,9 @@
         tooltip-position="top"
         :label="'Enable SABR as DASH backend'"
         compact
-        :default-value="sabrBackendEnabled"
+        :default-value="sabrEnabled"
         :tooltip="'Experimental and often has backoff time at the start of video playback. But a good alternative backend to try when default DASH backend failed.'"
-        @change="updateSabrBackendEnabled"
+        @change="updateSabrEnabled"
       />
     </FtFlexBox>
     <FtPrompt
@@ -84,13 +84,13 @@ function handleReplaceHttpCache(value) {
 
 const sabrAllowedOnPlatform = process.env.SUPPORTS_LOCAL_API
 /** @type {import('vue').ComputedRef<boolean>} */
-const sabrBackendEnabled = process.env.SUPPORTS_LOCAL_API ? computed(() => store.getters.getSabrBackendEnabled) : false
+const sabrEnabled = process.env.SUPPORTS_LOCAL_API ? computed(() => store.getters.getSabrEnabled) : false
 
 /**
  * @param {boolean} value
  */
-function updateSabrBackendEnabled(value) {
-  store.dispatch('updateSabrBackendEnabled', value)
+function updateSabrEnabled(value) {
+  store.dispatch('updateSabrEnabled', value)
 }
 
 </script>
