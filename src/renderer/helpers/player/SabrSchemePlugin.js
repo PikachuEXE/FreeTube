@@ -76,7 +76,7 @@ function formatIdFromString(str) {
 }
 
 /**
- * @param {Protos.FormatId} formatId
+ * @param {import('googlevideo/protos').FormatId} formatId
  * @param {shaka.extern.BufferedRange} buffered
  * @param {shaka.media.SegmentIndex} segmentIndex
  */
@@ -100,7 +100,7 @@ function createBufferedRange(formatId, buffered, segmentIndex) {
  * @param {shaka.Player} player
  * @param {shaka.extern.Manifest} manifest
  * @param {boolean} audioFormatsActive
- * @param {Protos.BufferedRange[]} bufferedRanges
+ * @param {import('googlevideo/protos').BufferedRange[]} bufferedRanges
  * @param {shaka.extern.Track} activeVariant
  */
 function fillBufferedRanges(player, manifest, audioFormatsActive, bufferedRanges, activeVariant) {
@@ -126,7 +126,7 @@ function fillBufferedRanges(player, manifest, audioFormatsActive, bufferedRanges
       bufferedRanges.push(createBufferedRange(audioFormatId, buffered, audioSegmentIndex))
     }
 
-    // Lazily initalise these variables as video data won't exist for audio-only playback
+    // Lazily initialize these variables as video data won't exist for audio-only playback
     let videoFormatId
     let videoSegmentIndex
 
@@ -829,7 +829,7 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       }
     }
 
-    /** @type {Protos.BufferedRange[]} */
+    /** @type {import('googlevideo/protos').BufferedRange[]} */
     const bufferedRanges = []
 
     if (!isInit && activeVariant) {
