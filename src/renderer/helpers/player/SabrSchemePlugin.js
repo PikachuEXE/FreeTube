@@ -208,7 +208,7 @@ function decodePart(part, decoder) {
 /**
  * @typedef TimeoutController
  * @type {object}
- * @property {() => void} resetTimeout
+ * @property {() => void} resetTimeoutOnce
  * @property {() => void} clearTimeout
  */
 /**
@@ -219,9 +219,13 @@ function decodePart(part, decoder) {
 function createTimeoutController(callback, timeoutMs) {
   return {
     _timeout: setTimeout(callback, timeoutMs),
-    resetTimeout() {
+    _resetCount: 0,
+    resetTimeoutOnce() {
+      if (this._resetCount > 0) return
+
       this.clearTimeout()
       this._timeout = setTimeout(callback, timeoutMs)
+      this._resetCount++
     },
     clearTimeout() {
       clearTimeout(this._timeout)
@@ -268,7 +272,9 @@ async function doRequest(
         currentState.abortController.signal.addEventListener('abort', reject)
       })
       // Must reset AFTER waiting to avoid requested aborted
-      currentState.timeoutController.resetTimeout()
+      // Since long backoff time mostly happens on the start of video playback we only reset timeout once
+      // i.e. backoff time parts received will not reset timeout - counted as video loading issue
+      currentState.timeoutController.resetTimeoutOnce()
     }
     response = await fetch(currentState.sabrUrl, currentState.requestInit)
     debugEntries.push({
