@@ -279,6 +279,18 @@ async function doRequest(
       // i.e. backoff time parts received will not reset timeout - counted as video loading issue
       currentState.timeoutController.resetTimeoutOnce()
     }
+
+    if (currentState.sabrStreamState.playerReloadRequested) {
+      console.warn('playerReloadRequested')
+
+      // Wait but can be aborted
+      // Pretend to wait so that parent has time to cleanup and abort current ops
+      await new Promise((resolve, reject) => {
+        setTimeout(resolve, 5000)
+        currentState.abortController.signal.addEventListener('abort', reject)
+      })
+    }
+
     response = await fetch(currentState.sabrUrl, currentState.requestInit)
     debugEntries.push({
       type: 'response',
@@ -774,19 +786,6 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
   }
 
   shaka.net.NetworkingEngine.registerScheme('sabr', (uri, request, requestType, _progressUpdated, headersReceived, _config) => {
-    if (sabrStreamState.playerReloadRequested) {
-      console.error('playerReloadRequested', {
-        sabrStreamState,
-      })
-
-      throw createRecoverableNetworkError(
-        ShakaError.Code.HTTP_ERROR,
-        uri,
-        new Error('Player Reload Requested'),
-        requestType,
-      )
-    }
-
     // lazily fetch it as the variable is only set after setupSabrScheme is called
     // but it will definitely exist when we receive a request here.
     const player = getPlayer()
