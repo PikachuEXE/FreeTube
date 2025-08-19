@@ -775,10 +775,9 @@ export function setupSabrScheme(sabrData, getPlayer, getManifest, playerWidth, p
       console.error('playerReloadRequested', {
         sabrStreamState,
       })
-      throw new ShakaError(
-        ShakaError.Severity.CRITICAL,
-        ShakaError.Category.PLAYER,
-        ShakaError.Code.CONTENT_NOT_LOADED,
+
+      throw createRecoverableNetworkError(
+        ShakaError.Code.HTTP_ERROR,
         uri,
         new Error('Player Reload Requested'),
         requestType,
