@@ -238,13 +238,26 @@ export async function getLocalVideoInfo(id) {
 
   const info = await webInnertube.getInfo(id, { po_token: contentPoToken })
 
-  // temporary workaround for SABR-only responses
+  // #region temporary workaround for SABR-only responses
+
+  // MWEB doesn't have an audio track selector so it picks the audio track on the server based on the request language.
+
+  const originalAudioTrackFormat = info.streaming_data?.adaptive_formats.find(format => {
+    return format.has_audio && format.is_original && format.language
+  })
+
+  if (originalAudioTrackFormat) {
+    webInnertube.session.context.client.hl = originalAudioTrackFormat.language
+  }
+
   const mwebInfo = await webInnertube.getBasicInfo(id, { client: 'MWEB', po_token: contentPoToken })
 
   if (mwebInfo.playability_status.status === 'OK' && mwebInfo.streaming_data?.adaptive_formats) {
     info.playability_status = mwebInfo.playability_status
     info.streaming_data.adaptive_formats = mwebInfo.streaming_data.adaptive_formats
   }
+
+  // #endregion temporary workaround for SABR-only responses
 
   let { clientName, clientVersion, osName, osVersion } = webInnertube.session.context.client
 
@@ -1299,6 +1312,8 @@ function parseLockupView(lockupView, channelId = undefined, channelName = undefi
       let publishedText
       let lengthSeconds = ''
       let liveNow = false
+      let isUpcoming = false
+      let premiereDate
 
       /** @type {YTNodes.ThumbnailOverlayBadgeView | undefined} */
       const thumbnailOverlayBadgeView = lockupView.content_image?.overlays?.firstOfType(YTNodes.ThumbnailOverlayBadgeView)
@@ -1306,6 +1321,12 @@ function parseLockupView(lockupView, channelId = undefined, channelName = undefi
       if (thumbnailOverlayBadgeView) {
         if (thumbnailOverlayBadgeView.badges.some(badge => badge.badge_style === 'THUMBNAIL_OVERLAY_BADGE_STYLE_LIVE')) {
           liveNow = true
+        } else if (thumbnailOverlayBadgeView.badges.some(badge => badge.text.toLowerCase() === 'upcoming')) {
+          isUpcoming = true
+
+          if (lockupView.metadata.metadata?.metadata_rows[1].metadata_parts?.[1].text?.text) {
+            premiereDate = new Date(lockupView.metadata.metadata.metadata_rows[1].metadata_parts[1].text.text)
+          }
         } else {
           const durationBadge = thumbnailOverlayBadgeView.badges.find(badge => /^[\d:]+$/.test(badge.text))
 
@@ -1336,9 +1357,11 @@ function parseLockupView(lockupView, channelId = undefined, channelName = undefi
         author: lockupView.metadata.metadata?.metadata_rows[0].metadata_parts?.[0].text?.text,
         authorId: lockupView.metadata.image?.renderer_context?.command_context?.on_tap?.payload.browseId,
         viewCount,
-        published: calculatePublishedDate(publishedText, liveNow),
+        published: calculatePublishedDate(publishedText, liveNow, isUpcoming, premiereDate),
         lengthSeconds,
-        liveNow
+        liveNow,
+        isUpcoming,
+        premiereDate
       }
     }
     default:
