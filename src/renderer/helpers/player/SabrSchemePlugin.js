@@ -265,7 +265,10 @@ async function doRequest(
   try {
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
       console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
-      currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
+      if (!currentState.sabrStreamState.playerReloadRequested) {
+        // No backoff related message when reload requested (but not finished)
+        currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
+      }
       // Wait but can be aborted
       await new Promise((resolve, reject) => {
         setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
