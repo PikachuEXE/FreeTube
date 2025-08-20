@@ -262,13 +262,15 @@ async function doRequest(
   /** @type {({ type: string, data: {[string]: unknown }|string) }[]} */
   const debugEntries = []
 
+  if (currentState.sabrStreamState.playerReloadRequested) {
+    // Multiple requests might be issued at the same time, other requests should abort themselves once reload requested
+    throw createRecoverableNetworkError(ShakaError.Code.OPERATION_ABORTED, operationInputs.uri, operationInputs.requestType)
+  }
+
   try {
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
       console.warn(`Waiting ${currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs}ms according to nextRequestPolicy`)
-      if (!currentState.sabrStreamState.playerReloadRequested) {
-        // No backoff related message when reload requested (but not finished)
-        currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
-      }
+      currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs })
       // Wait but can be aborted
       await new Promise((resolve, reject) => {
         setTimeout(resolve, currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs)
@@ -278,17 +280,6 @@ async function doRequest(
       // Since long backoff time mostly happens on the start of video playback we only reset timeout once
       // i.e. backoff time parts received will not reset timeout - counted as video loading issue
       currentState.timeoutController.resetTimeoutOnce()
-    }
-
-    if (currentState.sabrStreamState.playerReloadRequested) {
-      console.warn('playerReloadRequested')
-
-      // Wait but can be aborted
-      // Pretend to wait so that parent has time to cleanup and abort current ops
-      await new Promise((resolve, reject) => {
-        setTimeout(resolve, 5000)
-        currentState.abortController.signal.addEventListener('abort', reject)
-      })
     }
 
     response = await fetch(currentState.sabrUrl, currentState.requestInit)
@@ -530,8 +521,10 @@ async function doRequest(
             })
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
-            currentState.abortController.abort()
-            currentState.eventEmitter.emit('reload', { reloadPlaybackContext })
+            if (!currentState.abortController.signal.aborted) {
+              currentState.abortController.abort()
+              currentState.eventEmitter.emit('reload')
+            }
             break
           }
           case UMPPartId.PLAYBACK_START_POLICY: {
