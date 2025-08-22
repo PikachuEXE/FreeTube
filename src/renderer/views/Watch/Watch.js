@@ -335,7 +335,7 @@ export default defineComponent({
     this.onMountedDependOnLocalStateLoading()
   },
   methods: {
-    async reloadView(forceDash = false) {
+    async reloadView() {
       await this.handleRouteChange()
 
       if (this.$refs.player) {
@@ -363,7 +363,7 @@ export default defineComponent({
 
       switch (this.backendPreference) {
         case 'local':
-          await this.getVideoInformationLocal(forceDash)
+          await this.getVideoInformationLocal()
           break
         case 'invidious':
           this.getVideoInformationInvidious()
@@ -422,7 +422,7 @@ export default defineComponent({
       }
     },
 
-    getVideoInformationLocal: async function (forceDash = false) {
+    getVideoInformationLocal: async function () {
       if (this.firstLoad) {
         this.isLoading = true
       }
@@ -856,7 +856,7 @@ export default defineComponent({
               })
               ?.projection_type ?? null
 
-            if (result.streaming_data.server_abr_streaming_url && this.sabrEnabled && !forceDash) {
+            if (result.streaming_data.server_abr_streaming_url && this.sabrEnabled) {
               console.warn('getVideoInformationLocal > using SABR')
               const storyboards = storyboard
                 ? [{
@@ -1531,10 +1531,6 @@ export default defineComponent({
             return
           }
         }
-      } else if (process.env.SUPPORTS_LOCAL_API && this.backendPreference === 'local' && error.code === Code.LOAD_INTERRUPTED && this.activeFormat === 'dash') {
-        // Our SABR plugin throwing custom error
-        this.reloadView(true)
-        return
       }
 
       if (this.isLive || this.isPostLiveDvr) {
