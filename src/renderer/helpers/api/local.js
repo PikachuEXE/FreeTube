@@ -197,7 +197,6 @@ export async function getLocalSearchContinuation(continuationData) {
 
 /**
  * @param {string} id
- * @param {boolean} waitForAds - Enable hack to avoid 403 in non SABR DASH backend
  * @returns {Promise<{
  *   info: import('youtubei.js').YT.VideoInfo,
  *   poToken: string | undefined,
@@ -206,15 +205,18 @@ export async function getLocalSearchContinuation(continuationData) {
  *     clientVersion: string,
  *     osName: string,
  *     osVersion: string
- *   }
+ *   },
+ *   totalAdTimeSeconds: number,
  * }>}
  */
-export async function getLocalVideoInfo(id, waitForAds = false) {
+export async function getLocalVideoInfo(id) {
+  let totalAdTimeSeconds = 0
+
   const webInnertube = await createInnertube({
     withPlayer: true,
     generateSessionLocally: false,
     fetchFunc: async (input, init) => {
-      if (!waitForAds || !(input.url?.startsWith('https://www.youtube.com/youtubei/v1/player') && init?.headers?.get('X-Youtube-Client-Name') === '2')) {
+      if (!(input.url?.startsWith('https://www.youtube.com/youtubei/v1/player') && init?.headers?.get('X-Youtube-Client-Name') === '2')) {
         return fetch(input, init)
       }
 
@@ -225,8 +227,6 @@ export async function getLocalVideoInfo(id, waitForAds = false) {
       const json = JSON.parse(responseText)
 
       if (Array.isArray(json.adSlots)) {
-        let waitSeconds = 0
-
         for (const adSlot of json.adSlots) {
           if (adSlot.adSlotRenderer?.adSlotMetadata?.triggerEvent === 'SLOT_TRIGGER_EVENT_BEFORE_CONTENT') {
             const playerVars = adSlot.adSlotRenderer.fulfillmentContent?.fulfilledLayout?.playerBytesAdLayoutRenderer
@@ -236,14 +236,10 @@ export async function getLocalVideoInfo(id, waitForAds = false) {
               const match = playerVars.match(/length_seconds=([\d.]+)/)
 
               if (match) {
-                waitSeconds += parseFloat(match[1])
+                totalAdTimeSeconds += parseFloat(match[1])
               }
             }
           }
-        }
-
-        if (waitSeconds > 0) {
-          await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
         }
       }
 
@@ -405,7 +401,7 @@ export async function getLocalVideoInfo(id, waitForAds = false) {
     }
   }
 
-  return { info, poToken: sessionPoToken, clientInfo }
+  return { info, poToken: sessionPoToken, clientInfo, totalAdTimeSeconds }
 }
 
 /**

@@ -149,6 +149,7 @@ export default defineComponent({
       blockVideoAutoplay: false,
       autoplayInterruptionTimeout: null,
       playabilityStatus: '',
+      totalAdTimeSeconds: 0,
 
       onMountedRun: false,
 
@@ -428,7 +429,11 @@ export default defineComponent({
       }
 
       try {
-        const { info: result, poToken, clientInfo } = await getLocalVideoInfo(this.videoId, !this.sabrEnabled)
+        const { info: result, poToken, clientInfo, totalAdTimeSeconds } = await getLocalVideoInfo(this.videoId)
+        if (!this.sabrEnabled) {
+          // The hack should only be used on non-SABR
+          this.totalAdTimeSeconds = totalAdTimeSeconds
+        }
 
         this.isFamilyFriendly = result.basic_info.is_family_safe
 

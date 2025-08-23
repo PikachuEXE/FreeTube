@@ -1,4 +1,4 @@
-import { computed, defineComponent, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, defineComponent, onBeforeUnmount, onMounted, onUnmounted, reactive, ref, shallowRef, watch } from 'vue'
 import shaka from 'shaka-player'
 import { useI18n } from '../../composables/use-i18n-polyfill'
 
@@ -150,6 +150,10 @@ export default defineComponent({
     currentPlaybackRate: {
       type: Number,
       default: 1
+    },
+    initialLoadDelaySeconds: {
+      type: Number,
+      default: 0
     },
   },
   emits: [
@@ -2568,6 +2572,7 @@ export default defineComponent({
     // #endregion offline message
 
     // #region setup
+    const initLoadWaitTimeToastAC = new AbortController()
 
     onMounted(async () => {
       const videoElement = video.value
@@ -2697,8 +2702,26 @@ export default defineComponent({
         emit('playback-rate-updated', player.getPlaybackRate())
       })
     })
+    onUnmounted(() => {
+      initLoadWaitTimeToastAC.abort()
+    })
 
     async function performFirstLoad() {
+      const initialLoadDelaySeconds = props.initialLoadDelaySeconds
+      if (initialLoadDelaySeconds > 0) {
+        const initialLoadDelayMs = initialLoadDelaySeconds * 1000
+        showToast(
+          ({ elapsedMs, remainingMs }) => {
+            return `Remaining preroll-ad time time: ${remainingMs / 1000}s`
+          },
+          // So that we don't see last countdown text like 0/N
+          initialLoadDelayMs,
+          null,
+          initLoadWaitTimeToastAC.signal,
+        )
+        await new Promise((resolve) => setTimeout(resolve, initialLoadDelayMs))
+      }
+
       if (props.format === 'dash' || props.format === 'audio') {
         try {
           await player.load(props.manifestSrc, props.startTime, props.manifestMimeType)
