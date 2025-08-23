@@ -428,7 +428,7 @@ export default defineComponent({
       }
 
       try {
-        const { info: result, poToken, clientInfo } = await getLocalVideoInfo(this.videoId)
+        const { info: result, poToken, clientInfo } = await getLocalVideoInfo(this.videoId, !this.sabrEnabled)
 
         this.isFamilyFriendly = result.basic_info.is_family_safe
 

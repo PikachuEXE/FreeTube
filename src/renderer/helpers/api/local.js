@@ -34,9 +34,10 @@ const TRACKING_PARAM_NAMES = [
  * @param {boolean} options.safetyMode whether to hide mature content
  * @param {import('youtubei.js').ClientType} options.clientType use an alterate client
  * @param {boolean} options.generateSessionLocally generate the session locally or let YouTube generate it (local is faster, remote is more accurate)
+ * @param {?import('youtubei.js').FetchFunction} options.fetchFunc optional custom fetch function
  * @returns the Innertube instance
  */
-async function createInnertube({ withPlayer = false, location = undefined, safetyMode = false, clientType = undefined, generateSessionLocally = true } = {}) {
+async function createInnertube({ withPlayer = false, location = undefined, safetyMode = false, clientType = undefined, generateSessionLocally = true, fetchFunc = null } = {}) {
   let cache
   if (withPlayer) {
     if (process.env.IS_ELECTRON) {
@@ -59,7 +60,7 @@ async function createInnertube({ withPlayer = false, location = undefined, safet
     client_type: clientType,
 
     // use browser fetch
-    fetch: (input, init) => fetch(input, init),
+    fetch: (fetchFunc ?? ((input, init) => fetch(input, init))),
     cache,
     generate_session_locally: !!generateSessionLocally
   })
@@ -196,6 +197,7 @@ export async function getLocalSearchContinuation(continuationData) {
 
 /**
  * @param {string} id
+ * @param {boolean} waitForAds - Enable hack to avoid 403 in non SABR DASH backend
  * @returns {Promise<{
  *   info: import('youtubei.js').YT.VideoInfo,
  *   poToken: string | undefined,
@@ -207,8 +209,52 @@ export async function getLocalSearchContinuation(continuationData) {
  *   }
  * }>}
  */
-export async function getLocalVideoInfo(id) {
-  const webInnertube = await createInnertube({ withPlayer: true, generateSessionLocally: false })
+export async function getLocalVideoInfo(id, waitForAds = false) {
+  const webInnertube = await createInnertube({
+    withPlayer: true,
+    generateSessionLocally: false,
+    fetchFunc: async (input, init) => {
+      if (!waitForAds || !(input.url?.startsWith('https://www.youtube.com/youtubei/v1/player') && init?.headers?.get('X-Youtube-Client-Name') === '2')) {
+        return fetch(input, init)
+      }
+
+      const response = await fetch(input, init)
+
+      const responseText = await response.text()
+
+      const json = JSON.parse(responseText)
+
+      if (Array.isArray(json.adSlots)) {
+        let waitSeconds = 0
+
+        for (const adSlot of json.adSlots) {
+          if (adSlot.adSlotRenderer?.adSlotMetadata?.triggerEvent === 'SLOT_TRIGGER_EVENT_BEFORE_CONTENT') {
+            const playerVars = adSlot.adSlotRenderer.fulfillmentContent?.fulfilledLayout?.playerBytesAdLayoutRenderer
+              ?.renderingContent?.instreamVideoAdRenderer?.playerVars
+
+            if (playerVars) {
+              const match = playerVars.match(/length_seconds=([\d.]+)/)
+
+              if (match) {
+                waitSeconds += parseFloat(match[1])
+              }
+            }
+          }
+        }
+
+        if (waitSeconds > 0) {
+          await new Promise((resolve) => setTimeout(resolve, waitSeconds * 1000))
+        }
+      }
+
+      // Need to return a new response object, as you can only read the response body once.
+      return new Response(responseText, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers
+      })
+    }
+  })
 
   // based on the videoId (added to the body of the /player request and to caption URLs)
   let contentPoToken
