@@ -151,7 +151,7 @@ export default defineComponent({
       type: Number,
       default: 1
     },
-    initialLoadDelaySeconds: {
+    delayLoadUntilUnix: {
       type: Number,
       default: 0
     },
@@ -2707,12 +2707,12 @@ export default defineComponent({
     })
 
     async function performFirstLoad() {
-      const initialLoadDelaySeconds = props.initialLoadDelaySeconds
-      if (initialLoadDelaySeconds > 0) {
-        const initialLoadDelayMs = initialLoadDelaySeconds * 1000
+      const delayLoadUntilUnix = props.delayLoadUntilUnix
+      const initialLoadDelayMs = delayLoadUntilUnix - Date.now()
+      if (initialLoadDelayMs > 0) {
         showToast(
-          ({ elapsedMs, remainingMs }) => {
-            return `Remaining preroll-ad time time: ${remainingMs / 1000}s`
+          ({ remainingMs }) => {
+            return `Remaining preroll-ad time time: ${(remainingMs / 1000).toFixed(1)}s`
           },
           // So that we don't see last countdown text like 0/N
           initialLoadDelayMs,

@@ -206,7 +206,7 @@ export async function getLocalSearchContinuation(continuationData) {
  *     osName: string,
  *     osVersion: string
  *   },
- *   totalAdTimeSeconds: number,
+ *   adEndTimeUnixMs: number,
  * }>}
  */
 export async function getLocalVideoInfo(id) {
@@ -287,6 +287,8 @@ export async function getLocalVideoInfo(id) {
   }
 
   const mwebInfo = await webInnertube.getBasicInfo(id, { client: 'MWEB', po_token: contentPoToken })
+  // Some time would be used for parsing and maybe additional requests so end time should be calculated sooner to reduce actual waiting time
+  const adEndTimeUnixMs = Date.now() + totalAdTimeSeconds * 1000
 
   if (mwebInfo.playability_status.status === 'OK' && mwebInfo.streaming_data?.adaptive_formats) {
     info.playability_status = mwebInfo.playability_status
@@ -401,7 +403,12 @@ export async function getLocalVideoInfo(id) {
     }
   }
 
-  return { info, poToken: sessionPoToken, clientInfo, totalAdTimeSeconds }
+  return {
+    info,
+    poToken: sessionPoToken,
+    clientInfo,
+    adEndTimeUnixMs,
+  }
 }
 
 /**

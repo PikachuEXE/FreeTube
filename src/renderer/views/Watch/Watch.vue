@@ -41,7 +41,7 @@
           :start-in-fullwindow="startNextVideoInFullwindow"
           :start-in-pip="startNextVideoInPip"
           :current-playback-rate="currentPlaybackRate"
-          :initial-load-delay-seconds="totalAdTimeSeconds"
+          :delay-load-until-unix="adEndTimeUnixMs"
           class="videoPlayer"
           @error="handlePlayerError"
           @loaded="handleVideoLoaded"
