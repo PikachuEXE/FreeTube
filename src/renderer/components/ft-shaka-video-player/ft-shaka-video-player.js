@@ -1263,12 +1263,9 @@ export default defineComponent({
       // Since there can be 2 requests at the same time (video + audio), we debounce the listener to only show the message once
       sabrStream.onBackoffRequested(debounce(({ backoffMs }) => {
         showToast(
-          ({ elapsedMs, remainingMs }) => {
-            if (backoffMs <= 4000 || elapsedMs <= 4000) {
-              return `Waiting for ${backoffMs / 1000}s as SABR backoff time`
-            }
-
-            return `Remaining SABR backoff time: ${remainingMs / 1000}s`
+          ({ remainingMs }) => {
+            // `+value` converts string back to float
+            return `Remaining SABR backoff time: ${+(remainingMs / 1000).toFixed(1)}s`
           },
           // So that we don't see last countdown text like 0/N
           backoffMs,
