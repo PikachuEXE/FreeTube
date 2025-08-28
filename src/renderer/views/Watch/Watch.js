@@ -862,7 +862,7 @@ export default defineComponent({
               })
               ?.projection_type ?? null
 
-            if (result.streaming_data.server_abr_streaming_url && this.sabrEnabled) {
+            if (result.streaming_data.server_abr_streaming_url && result.player_config?.media_common_config?.media_ustreamer_request_config?.video_playback_ustreamer_config != null && this.sabrEnabled) {
               console.warn('getVideoInformationLocal > using SABR')
               const storyboards = storyboard
                 ? [{
@@ -1584,7 +1584,7 @@ export default defineComponent({
     },
 
     /**
-     * @param {import('youtubei.js').YT.VideoInfo} videoInfo
+     * @param {import('youtubei.js').IParsedResponse} videoInfo
      * @param {string} poToken
      * @param {SabrData['clientInfo']} clientInfo
      * @param {import('../../helpers/player/SabrManifestParser').SabrManifest['storyboards']} storyboards
