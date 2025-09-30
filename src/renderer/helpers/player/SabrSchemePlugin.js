@@ -13,10 +13,17 @@ import {
   NextRequestPolicy,
   PlaybackCookie,
   ReloadPlaybackContext,
+  PlaybackStartPolicy,
+  RequestCancellationPolicy,
+  RequestIdentifier,
 } from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
-import { deepCopy } from '../utils'
+import { deepCopy, showToast } from '../utils'
+
+// DEBUG
+import { Log as YouTubeLog } from 'youtubei.js'
+YouTubeLog.setLevel(YouTubeLog.Level.INFO)
 
 const AbortableOperation = shaka.util.AbortableOperation
 const ShakaError = shaka.util.Error
@@ -294,6 +301,8 @@ async function doRequest(
   let segmentComplete = false
   let shouldRetry = false
   let shouldRetryDueToNextRequestPolicy = false
+  /** @type {{type: string, data: unknown}[]} */
+  const debugParts = []
 
   let invalidPoToken = false
   let error
@@ -327,6 +336,8 @@ async function doRequest(
       }
     }
     if (shouldReloadDueToBackoffLoop || currentState.cumulativeRetryDueToNextRequestPolicy >= 100) {
+      showToast(`DEBUG: Fake Reload Requested, cumulativeBackOffRequested: ${currentState.cumulativeBackOffRequested}, cumulativeBackOffTimeMs: ${currentState.cumulativeBackOffTimeMs}, cumulativeRetryDueToNextRequestPolicy: ${currentState.cumulativeRetryDueToNextRequestPolicy}`)
+      console.warn(`DEBUG: Fake Reload Requested, cumulativeBackOffRequested: ${currentState.cumulativeBackOffRequested}, cumulativeBackOffTimeMs: ${currentState.cumulativeBackOffTimeMs}, cumulativeRetryDueToNextRequestPolicy: ${currentState.cumulativeRetryDueToNextRequestPolicy}`)
       // Fire fake reload event due to detecting retry loop
       currentState.sabrStreamState.playerReloadRequested = true
       if (!currentState.abortController.signal.aborted) {
@@ -358,6 +369,10 @@ async function doRequest(
         switch (part.type) {
           case UMPPartId.STREAM_PROTECTION_STATUS: {
             const streamProtectionStatus = decodePart(part, StreamProtectionStatus)
+            debugParts.push({
+              type: 'STREAM_PROTECTION_STATUS',
+              data: streamProtectionStatus,
+            })
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
             }
@@ -365,6 +380,10 @@ async function doRequest(
           }
           case UMPPartId.SABR_ERROR: {
             const sabrError = decodePart(part, SabrError)
+            debugParts.push({
+              type: 'SABR_ERROR',
+              data: sabrError,
+            })
             if (!sabrError) break
 
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
@@ -372,6 +391,10 @@ async function doRequest(
           }
           case UMPPartId.SABR_REDIRECT: {
             const sabrRedirect = decodePart(part, SabrRedirect)
+            debugParts.push({
+              type: 'SABR_REDIRECT',
+              data: sabrRedirect,
+            })
             if (!sabrRedirect) break
 
             currentState.sabrUrl = sabrRedirect.url
@@ -381,6 +404,10 @@ async function doRequest(
           case UMPPartId.MEDIA_HEADER: {
             if (mediaHeaderId === undefined) {
               const mediaHeader = decodePart(part, MediaHeader)
+              debugParts.push({
+                type: 'MEDIA_HEADER',
+                data: mediaHeader,
+              })
               if (!mediaHeader) break
 
               if (
@@ -399,12 +426,20 @@ async function doRequest(
             break
           }
           case UMPPartId.MEDIA: {
+            debugParts.push({
+              type: 'MEDIA',
+              data: part.data.getUint8(0),
+            })
             if (mediaHeaderId === part.data.getUint8(0)) {
               responseDataChunks.push(...part.data.split(1).remainingBuffer.chunks)
             }
             break
           }
           case UMPPartId.MEDIA_END: {
+            debugParts.push({
+              type: 'MEDIA_END',
+              data: part.data.getUint8(0),
+            })
             if (mediaHeaderId === part.data.getUint8(0)) {
               segmentComplete = true
               currentState.abortStatus.finished = true
@@ -414,6 +449,10 @@ async function doRequest(
           }
           case UMPPartId.NEXT_REQUEST_POLICY: {
             const nextRequestPolicy = decodePart(part, NextRequestPolicy)
+            debugParts.push({
+              type: 'NEXT_REQUEST_POLICY',
+              data: nextRequestPolicy,
+            })
 
             shouldRetry = true
             shouldRetryDueToNextRequestPolicy = true
@@ -425,10 +464,42 @@ async function doRequest(
             break
           }
           case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
+            debugParts.push({
+              type: 'FORMAT_INITIALIZATION_METADATA',
+              data: undefined,
+            })
+            break
+          }
+          case UMPPartId.PLAYBACK_START_POLICY: {
+            const playbackStartPolicy = decodePart(part, PlaybackStartPolicy)
+            debugParts.push({
+              type: 'PLAYBACK_START_POLICY',
+              data: playbackStartPolicy,
+            })
+            break
+          }
+          case UMPPartId.REQUEST_CANCELLATION_POLICY: {
+            const requestCancellationPolicy = decodePart(part, RequestCancellationPolicy)
+            debugParts.push({
+              type: 'REQUEST_CANCELLATION_POLICY',
+              data: requestCancellationPolicy,
+            })
+            break
+          }
+          case UMPPartId.REQUEST_IDENTIFIER: {
+            const requestIdentifier = decodePart(part, RequestIdentifier)
+            debugParts.push({
+              type: 'REQUEST_IDENTIFIER',
+              data: requestIdentifier,
+            })
             break
           }
           case UMPPartId.SABR_CONTEXT_UPDATE: {
             const sabrContextUpdate = decodePart(part, SabrContextUpdate)
+            debugParts.push({
+              type: 'SABR_CONTEXT_UPDATE',
+              data: sabrContextUpdate,
+            })
             if (!sabrContextUpdate) break
 
             if (sabrContextUpdate.type !== undefined && sabrContextUpdate.value?.length) {
@@ -449,6 +520,10 @@ async function doRequest(
           }
           case UMPPartId.SABR_CONTEXT_SENDING_POLICY: {
             const sabrContextSendingPolicy = decodePart(part, SabrContextSendingPolicy)
+            debugParts.push({
+              type: 'SABR_CONTEXT_UPDATE',
+              data: sabrContextSendingPolicy,
+            })
             if (!sabrContextSendingPolicy) break
 
             for (const startPolicy of sabrContextSendingPolicy.startPolicy) {
@@ -474,6 +549,8 @@ async function doRequest(
             const reloadPlaybackContext = decodePart(part, ReloadPlaybackContext)
             if (!reloadPlaybackContext) break
 
+            showToast('DEBUG: Actual Reload Requested')
+            console.warn('DEBUG: Actual Reload Requested')
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
             if (!currentState.abortController.signal.aborted) {
@@ -483,6 +560,10 @@ async function doRequest(
             break
           }
           default: {
+            debugParts.push({
+              type: 'UNKNOWN',
+              data: part.type,
+            })
             break
           }
         }
@@ -535,6 +616,14 @@ async function doRequest(
     if (shouldRetryDueToNextRequestPolicy) {
       // Only count on actual retry to avoid counting false positive (when segmentComplete
       currentState.cumulativeRetryDueToNextRequestPolicy += 1
+      // Detect infinite retry due to next request policy (without backoff)
+    }
+    if ((currentState.cumulativeRetryDueToNextRequestPolicy > 0 && currentState.cumulativeRetryDueToNextRequestPolicy % 50 === 0) || ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0 && currentState.cumulativeBackOffRequested > 0)) {
+      console.warn(`DEBUG: cumulativeRetryDueToNextRequestPolicy: ${currentState.cumulativeRetryDueToNextRequestPolicy}`)
+      console.warn('currentState.sabrStreamState.nextRequestPolicy', currentState.sabrStreamState.nextRequestPolicy)
+      console.warn('currentState.abrRequest.streamerContext.playbackCookie', PlaybackCookie.decode(currentState.abrRequest.streamerContext.playbackCookie))
+      console.warn('currentState.abortStatus', currentState.abortStatus)
+      console.warn('debugParts', debugParts)
     }
 
     const { sabrContexts, unsentSabrContexts } = prepareSabrContexts(currentState.sabrStreamState)
