@@ -597,9 +597,9 @@ export default defineComponent({
         // YouTube uses these values and they seem to work well in FreeTube too,
         // so we might as well use them
         streaming: {
-          bufferingGoal: 180,
+          bufferingGoal: 360,
           rebufferingGoal: 0.02,
-          bufferBehind: 300
+          bufferBehind: 600,
         },
         manifest: {
           disableVideo: format === 'audio',
