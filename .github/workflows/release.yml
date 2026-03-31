@@ -114,7 +114,7 @@ jobs:
         appimage="FreeTube-${VERSION}.AppImage"
         wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O ./appimagetool.AppImage
         chmod +x ./"$appimage" ./appimagetool.AppImage
-        update_information='gh-releases-zsync|FreeTubeApp|FreeTube|latest-all|freetube-*-amd64.AppImage.zsync'
+        update_information='gh-releases-zsync|PikachuEXE|FreeTube|latest-all|freetube-*-amd64.AppImage.zsync'
         ./"$appimage" --appimage-extract && rm -f ./"$appimage"
         ./appimagetool.AppImage --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 20 \
           -u "$update_information" -n ./squashfs-root ./"$appimage"
@@ -132,7 +132,7 @@ jobs:
         wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O ./appimagetool.AppImage
         wget "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64" -O runtime
         chmod +x ./"$appimage" ./appimagetool.AppImage ./runtime
-        update_information='gh-releases-zsync|FreeTubeApp|FreeTube|latest-all|freetube-*-armv7l.AppImage.zsync'
+        update_information='gh-releases-zsync|PikachuEXE|FreeTube|latest-all|freetube-*-armv7l.AppImage.zsync'
         TARGET_APPIMAGE="$appimage" ./runtime --appimage-extract && rm -f ./"$appimage"
         ARCH=armhf ./appimagetool.AppImage --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 20 \
           -u "$update_information" -n ./squashfs-root ./"$appimage"
@@ -150,7 +150,7 @@ jobs:
         wget "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O ./appimagetool.AppImage
         wget "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64" -O runtime
         chmod +x ./"$appimage" ./appimagetool.AppImage ./runtime
-        update_information='gh-releases-zsync|FreeTubeApp|FreeTube|latest-all|freetube-*-arm64.AppImage.zsync'
+        update_information='gh-releases-zsync|PikachuEXE|FreeTube|latest-all|freetube-*-arm64.AppImage.zsync'
         TARGET_APPIMAGE="$appimage" ./runtime --appimage-extract && rm -f ./"$appimage"
         ARCH=aarch64 ./appimagetool.AppImage --comp zstd --mksquashfs-opt -Xcompression-level --mksquashfs-opt 20 \
           -u "$update_information" -n ./squashfs-root ./"$appimage"
@@ -162,7 +162,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-x64-portable.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.zip
         asset_content_type: application/zip
@@ -173,7 +173,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-x64-portable.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.7z
         asset_content_type: application/x-7z-compressed
@@ -184,7 +184,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-armv7l-portable.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-armv7l.zip
         asset_content_type: application/zip
@@ -195,7 +195,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-armv7l-portable.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-armv7l.7z
         asset_content_type: application/x-7z-compressed
@@ -206,7 +206,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-arm64-portable.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64.zip
         asset_content_type: application/zip
@@ -217,7 +217,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-linux-arm64-portable.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64.7z
         asset_content_type: application/x-7z-compressed
@@ -228,7 +228,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube_${{ steps.getPackageInfo.outputs.version }}_beta_amd64.deb
         asset_path: build/freetube_${{ steps.getPackageInfo.outputs.version }}_amd64.deb
         asset_content_type: application/vnd.debian.binary-package
@@ -239,7 +239,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube_${{ steps.getPackageInfo.outputs.version }}_beta_armv7l.deb
         asset_path: build/freetube_${{ steps.getPackageInfo.outputs.version }}_armv7l.deb
         asset_content_type: application/vnd.debian.binary-package
@@ -250,7 +250,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube_${{ steps.getPackageInfo.outputs.version }}_beta_arm64.deb
         asset_path: build/freetube_${{ steps.getPackageInfo.outputs.version }}_arm64.deb
         asset_content_type: application/vnd.debian.binary-package
@@ -261,7 +261,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-amd64.AppImage
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}.AppImage
         asset_content_type: application/vnd.appimage
@@ -272,7 +272,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-amd64.AppImage.zsync
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}.AppImage.zsync
         asset_content_type: application/x-zsync
@@ -283,7 +283,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-armv7l.AppImage
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}-armv7l.AppImage
         asset_content_type: application/vnd.appimage
@@ -294,7 +294,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-armv7l.AppImage.zsync
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}-armv7l.AppImage.zsync
         asset_content_type: application/x-zsync
@@ -305,7 +305,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-arm64.AppImage
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}-arm64.AppImage
         asset_content_type: application/vnd.appimage
@@ -316,7 +316,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-arm64.AppImage.zsync
         asset_path: build/FreeTube-${{ steps.getPackageInfo.outputs.version }}-arm64.AppImage.zsync
         asset_content_type: application/x-zsync
@@ -327,7 +327,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta.amd64.rpm
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.x86_64.rpm
         asset_content_type: application/x-rpm
@@ -340,7 +340,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta.arm64.rpm
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.aarch64.rpm
         asset_content_type: application/x-rpm
@@ -351,7 +351,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-amd64.pacman
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.pacman
         asset_content_type: application/x-zstd-compressed-tar
@@ -362,7 +362,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-setup-x64.exe
         asset_path: build/freetube Setup ${{ steps.getPackageInfo.outputs.version }}.exe
         asset_content_type: application/x-ms-dos-executable
@@ -373,7 +373,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-x64-portable.exe
         asset_path: build/FreeTube ${{ steps.getPackageInfo.outputs.version }}.exe
         asset_content_type: application/x-ms-dos-executable
@@ -384,7 +384,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-x64-portable.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-win.zip
         asset_content_type: application/zip
@@ -395,7 +395,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-x64-portable.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-win.7z
         asset_content_type: application/x-7z-compressed
@@ -406,7 +406,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-setup-arm64.exe
         asset_path: build/freetube Setup ${{ steps.getPackageInfo.outputs.version }}.exe
         asset_content_type: application/x-ms-dos-executable
@@ -417,7 +417,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-arm64-portable.exe
         asset_path: build/FreeTube ${{ steps.getPackageInfo.outputs.version }}.exe
         asset_content_type: application/x-ms-dos-executable
@@ -428,7 +428,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-arm64-portable.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64-win.zip
         asset_content_type: application/zip
@@ -439,7 +439,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-win-arm64-portable.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64-win.7z
         asset_content_type: application/x-7z-compressed
@@ -450,7 +450,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-x64.dmg
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}.dmg
         asset_content_type: application/x-apple-diskimage
@@ -461,7 +461,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-x64.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-mac.zip
         asset_content_type: application/zip
@@ -472,7 +472,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-x64.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-mac.7z
         asset_content_type: application/x-7z-compressed
@@ -483,7 +483,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-arm64.dmg
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64.dmg
         asset_content_type: application/x-apple-diskimage
@@ -494,7 +494,7 @@ jobs:
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-arm64.zip
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64-mac.zip
         asset_content_type: application/x-apple-diskimage
@@ -505,7 +505,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: https://uploads.github.com/repos/FreeTubeApp/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
+        upload_url: https://uploads.github.com/repos/PikachuEXE/FreeTube/releases/${{ inputs.releaseId }}/assets{?name,label}
         asset_name: freetube-${{ steps.getPackageInfo.outputs.version }}-beta-mac-arm64.7z
         asset_path: build/freetube-${{ steps.getPackageInfo.outputs.version }}-arm64-mac.7z
         asset_content_type: application/x-7z-compressed
