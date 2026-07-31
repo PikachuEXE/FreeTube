@@ -72,8 +72,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(vue@3.5.40(typescript@6.0.3))
       youtubei.js:
-        specifier: ^17.2.0
-        version: 17.2.0
+        specifier: https://github.com/PikachuEXE/YouTube.js.git#custom-builds/17.2.0-wip
+        version: https://codeload.github.com/PikachuEXE/YouTube.js/tar.gz/bdaa7cf2e51b5d5e937ba9f57463b981ea1c6d5c
     devDependencies:
       '@babel/core':
         specifier: ^8.0.1
@@ -723,9 +723,6 @@ packages:
   '@babel/types@8.0.4':
     resolution: {integrity: sha512-eY+Yn3dCqTGmyiq2QRU66lA5FL8lqqqvecHt0fF3uHONIa7ToYsaCiWV8lOKqAs0Rb2SjixiKFROngnulPtt2g==}
     engines: {node: ^22.18.0 || >=24.11.0}
-
-  '@bufbuild/protobuf@2.1.0':
-    resolution: {integrity: sha512-+2Mx67Y3skJ4NCD/qNSdBJNWtu6x6Qr53jeNg+QcwiL6mt0wK+3jwHH2x1p7xaYH6Ve2JKOVn0OxU35WsmqI9A==}
 
   '@bufbuild/protobuf@2.12.1':
     resolution: {integrity: sha512-BvAMfS6LrgZiryOAZ4pBYucu4wG/Ei/9o9DZ9akbREnMLbPJiom2i8b9C8IsKErQoiKqVhrerzt3kOT/RrzLHg==}
@@ -4531,7 +4528,6 @@ packages:
 
   shaka-player@5.1.12:
     resolution: {integrity: sha512-luGIzJ/H201aY0Hobs5853vY1eRJXPHH+u3oSWiTAYoufq5s/yIbRZS1QwCsj3f3Fyxc2C3HfptfI0brjE+RIQ==}
-    engines: {node: '>=18'}
 
   shallow-clone@3.0.1:
     resolution: {integrity: sha512-/6KqX+GVUdqPuPPd2LxDDxzX6CAbjJehAAOKlNpqqUpAqPM6HeL8f+o3a+JsyGjn2lv0WY8UsTgUJjU9Ok55NA==}
@@ -5242,8 +5238,9 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  youtubei.js@17.2.0:
-    resolution: {integrity: sha512-XLNsgRKO1h7t4i9tIMWSQSeWdD7Ujkk5v1m5YCaumaHMhu/xuLqtO3M0Hq7CXNup9HlJ1NGrT1Y+HLIHnL6Ujg==}
+  youtubei.js@https://codeload.github.com/PikachuEXE/YouTube.js/tar.gz/bdaa7cf2e51b5d5e937ba9f57463b981ea1c6d5c:
+    resolution: {gitHosted: true, integrity: sha512-tNKVWLzTe7l12I1JA9msn4/UK1LKyM2ifjKTs7/YSHAjnC0smt4Cj03yz7t2iTpYJ447RfDpHNEfKmfiX70qcQ==, tarball: https://codeload.github.com/PikachuEXE/YouTube.js/tar.gz/bdaa7cf2e51b5d5e937ba9f57463b981ea1c6d5c}
+    version: 17.2.0
 
 snapshots:
 
@@ -5839,8 +5836,6 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 8.0.0
       '@babel/helper-validator-identifier': 8.0.4
-
-  '@bufbuild/protobuf@2.1.0': {}
 
   '@bufbuild/protobuf@2.12.1': {}
 
@@ -10617,8 +10612,8 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  youtubei.js@17.2.0:
+  youtubei.js@https://codeload.github.com/PikachuEXE/YouTube.js/tar.gz/bdaa7cf2e51b5d5e937ba9f57463b981ea1c6d5c:
     dependencies:
-      '@bufbuild/protobuf': 2.1.0
+      '@bufbuild/protobuf': 2.12.1
       fflate: 0.8.3
       meriyah: 6.1.4
