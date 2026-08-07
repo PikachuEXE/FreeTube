@@ -43,11 +43,12 @@ let firstTime = true
  * as the BotGuard stuff accesses the global `document` and `window` objects and also requires making some requests.
  * So we definitely don't want it running in the same places as the rest of the FreeTube code with the user data.
  * @param {string} videoId
- * @param {string} context
+ * @param {string} challengeData
+ * @param {string} ytConfig
  * @param {string|undefined} proxyUrl
  * @returns {Promise<string>}
  */
-export function generatePoToken(videoId, context, proxyUrl) {
+export function generatePoToken(videoId, challengeData, ytConfig, proxyUrl) {
   if (firstTime) {
     firstTime = false
     enqueueAsyncFunction(sharedInit)
@@ -65,7 +66,7 @@ export function generatePoToken(videoId, context, proxyUrl) {
   // - https://github.com/FreeTubeApp/FreeTube/issues/8640
   // - https://github.com/electron/electron/pull/46131
   // - https://github.com/electron/electron/commit/bac2f46ba981cc1763c0485cec44813c1d07fa18
-  const potokenPromise = enqueueAsyncFunction(internalGeneratePotoken, videoId, context, proxyUrl)
+  const potokenPromise = enqueueAsyncFunction(internalGeneratePotoken, videoId, challengeData, ytConfig, proxyUrl)
 
   // schedule the cleanup separately,
   // so that we can return the potoken without having to wait until the cleanup is done
@@ -145,11 +146,12 @@ async function sharedInit() {
 
 /**
  * @param {string} videoId
- * @param {string} context
+ * @param {string} challengeData
+ * @param {string} ytConfig
  * @param {string|undefined} proxyUrl
  * @returns {Promise<string>}
  */
-async function internalGeneratePotoken(videoId, context, proxyUrl) {
+async function internalGeneratePotoken(videoId, challengeData, ytConfig, proxyUrl) {
   let webContentsView
 
   try {
@@ -203,7 +205,7 @@ async function internalGeneratePotoken(videoId, context, proxyUrl) {
       }
     })
 
-    const script = cachedScript.replace('FT_PARAMS', `"${videoId}",${context}`)
+    const script = cachedScript.replace('FT_PARAMS', `"${videoId}",${challengeData},${ytConfig}`)
 
     return await webContentsView.webContents.executeJavaScript(script)
   } finally {

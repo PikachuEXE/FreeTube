@@ -8,34 +8,13 @@ import { WebPoMinter } from 'bgutils-js/webpo'
 /**
  * Based on: https://github.com/LuanRT/BgUtils/blob/main/examples/node/innertube-challenge-fetcher-example.ts
  * @param {string} videoId
- * @param {import('youtubei.js').Session['context']} context
+ * @param {object} challengeData
+ * @param {object} ytConfig
  */
-export default async function (videoId, context) {
+export default async function (videoId, challengeData, ytConfig) {
   const requestKey = 'O43z0dpjhgX20SCx4KAo'
 
-  const challengeResponse = await fetch(
-    'https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false&alt=json',
-    {
-      method: 'POST',
-      headers: {
-        Accept: '*/*',
-        'Content-Type': 'application/json',
-        'X-Goog-Visitor-Id': context.client.visitorData,
-        'X-Youtube-Client-Version': context.client.clientVersion,
-        'X-Youtube-Client-Name': '1'
-      },
-      body: JSON.stringify({
-        engagementType: 'ENGAGEMENT_TYPE_UNBOUND',
-        context
-      }),
-    }
-  )
-
-  if (!challengeResponse.ok) {
-    throw new Error(`Request to ${challengeResponse.url} failed with status ${challengeResponse.status}\n${await challengeResponse.text()}`)
-  }
-
-  const challengeData = await challengeResponse.json()
+  window.yt = { config_: ytConfig } // BotGuard reads the EVENT_ID field
 
   if (!challengeData.bgChallenge) {
     throw new Error('Failed to get BotGuard challenge')
