@@ -333,21 +333,14 @@ export default defineComponent({
       })
     })
 
-    const playbackRates = computed(() => {
-      const interval = videoPlaybackRateInterval.value
-      const playbackRates = []
-      let i = interval
+    const defaultShortcutPlaybackRates = [0.25, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0]
+    const shortcutPlaybackRates = computed(() => {
+      const maxPlaybackRate = maxVideoPlaybackRate.value
 
-      while (i <= maxVideoPlaybackRate.value) {
-        playbackRates.push(i)
-        i += interval
-        i = parseFloat(i.toFixed(2))
-      }
-
-      return playbackRates
+      return defaultShortcutPlaybackRates.filter(r => r <= maxPlaybackRate)
     })
 
-    watch(playbackRates, (newValue) => {
+    watch(shortcutPlaybackRates, (newValue) => {
       ui.configure({
         playbackRates: newValue
       })
@@ -956,8 +949,8 @@ export default defineComponent({
           showBufferingSpinner: !displayVideoPlayButton.value,
           enableFullscreenOnRotation: enterFullscreenOnDisplayRotate.value,
           playbackRateSliderMax: maxVideoPlaybackRate.value,
-          playbackRateSliderMin: videoPlaybackRateInterval.value,
-          playbackRates: playbackRates.value,
+          playbackRateSliderMin: defaultShortcutPlaybackRates[0],
+          playbackRates: shortcutPlaybackRates.value,
           tapSeekDistance: defaultSkipInterval.value,
 
           // we have our own ones (shaka-player's ones are quite limited)
