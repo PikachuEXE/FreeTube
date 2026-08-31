@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
 
       - name: Create filediff comment
-        uses: PikachuEXE/filediff@d7576e408be4e90bd48ffe91c7d8dcb93ae687cd # v0.0.4
+        uses: PikachuEXE/filediff@bf3b40b7d5ae22c0135d2174f7f3b75692520437 # v0.0.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
