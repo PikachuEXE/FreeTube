@@ -20,7 +20,7 @@ jobs:
           persist-credentials: false
 
       - name: Create filediff comment
-        uses: Shopify/filediff@ada920c512dce7297703791084e5d9f2d65df418 # v0.0.4
+        uses: PikachuEXE/filediff@d7576e408be4e90bd48ffe91c7d8dcb93ae687cd # v0.0.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
