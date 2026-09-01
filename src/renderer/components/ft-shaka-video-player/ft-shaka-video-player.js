@@ -264,7 +264,8 @@ export default defineComponent({
 
     watch(displayVideoPlayButton, (newValue) => {
       ui.configure({
-        bigButtons: newValue ? ['play_pause'] : []
+        bigButtons: newValue ? ['play_pause_buffering'] : [],
+        showBufferingSpinner: !newValue
       })
     })
 
@@ -316,25 +317,30 @@ export default defineComponent({
       return parseInt(store.getters.getMaxVideoPlaybackRate)
     })
 
+    watch(maxVideoPlaybackRate, (newValue) => {
+      ui.configure({
+        playbackRateSliderMax: newValue
+      })
+    })
+
     const videoPlaybackRateInterval = computed(() => {
       return parseFloat(store.getters.getVideoPlaybackRateInterval)
     })
 
-    const playbackRates = computed(() => {
-      const interval = videoPlaybackRateInterval.value
-      const playbackRates = []
-      let i = interval
-
-      while (i <= maxVideoPlaybackRate.value) {
-        playbackRates.unshift(i)
-        i += interval
-        i = parseFloat(i.toFixed(2))
-      }
-
-      return playbackRates
+    watch(videoPlaybackRateInterval, (newValue) => {
+      ui.configure({
+        playbackRateSliderMin: newValue
+      })
     })
 
-    watch(playbackRates, (newValue) => {
+    const defaultShortcutPlaybackRates = [0.25, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0]
+    const shortcutPlaybackRates = computed(() => {
+      const maxPlaybackRate = maxVideoPlaybackRate.value
+
+      return defaultShortcutPlaybackRates.filter(r => r <= maxPlaybackRate)
+    })
+
+    watch(shortcutPlaybackRates, (newValue) => {
       ui.configure({
         playbackRates: newValue
       })
@@ -605,9 +611,9 @@ export default defineComponent({
         // YouTube uses these values and they seem to work well in FreeTube too,
         // so we might as well use them
         streaming: {
-          bufferingGoal: 180,
+          bufferingGoal: 720,
           rebufferingGoal: 0.02,
-          bufferBehind: 300
+          bufferBehind: 1200,
         },
         manifest: {
           disableVideo: format === 'audio',
@@ -634,7 +640,7 @@ export default defineComponent({
         // Electron doesn't like YouTube's vp9 VR video streams and throws:
         // "CHUNK_DEMUXER_ERROR_APPEND_FAILED: Projection element is incomplete; ProjectionPoseYaw required."
         // So use the AV1 and h264 codecs instead which it doesn't reject
-        preferredVideoCodecs: typeof props.vrProjection === 'string' ? ['av01', 'avc1'] : []
+        preferredVideo: typeof props.vrProjection === 'string' ? [{ codec: 'av01' }, { codec: 'avc1' }] : []
       }
     }
 
@@ -794,8 +800,7 @@ export default defineComponent({
         'ft_skip_previous',
         'play_pause',
         'ft_skip_next',
-        'mute',
-        'volume',
+        'mute_volume',
         'time_and_duration',
         'spacer'
       ]
@@ -940,9 +945,12 @@ export default defineComponent({
           },
 
           // these have their own watchers
-          bigButtons: displayVideoPlayButton.value ? ['play_pause'] : [],
+          bigButtons: displayVideoPlayButton.value ? ['play_pause_buffering'] : [],
+          showBufferingSpinner: !displayVideoPlayButton.value,
           enableFullscreenOnRotation: enterFullscreenOnDisplayRotate.value,
-          playbackRates: playbackRates.value,
+          playbackRateSliderMax: maxVideoPlaybackRate.value,
+          playbackRateSliderMin: defaultShortcutPlaybackRates[0],
+          playbackRates: shortcutPlaybackRates.value,
           tapSeekDistance: defaultSkipInterval.value,
 
           // we have our own ones (shaka-player's ones are quite limited)
