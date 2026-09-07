@@ -16,10 +16,20 @@ import {
 } from 'googlevideo/protos'
 import shaka from 'shaka-player'
 
-import { deepCopy } from '../utils'
+import { copyToClipboard, deepCopy, showToast } from '../utils'
 
 const AbortableOperation = shaka.util.AbortableOperation
 const ShakaError = shaka.util.Error
+
+function debugWithToast(message, ...toBeInspectedObjects) {
+  const messageId = process.env.IS_ELECTRON || crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+  const printedMessage = `[ID: ${messageId}] ${message}`
+  showToast(`${printedMessage} (Click to copy msg ID)`, 10000, () => copyToClipboard(messageId))
+  console.debug(printedMessage, ...toBeInspectedObjects)
+}
 
 /**
  * @typedef OperationInputs
@@ -246,6 +256,7 @@ function prepareSabrContexts(sabrStreamState) {
  * @returns {T | undefined}
  */
 function decodePart(part, decoder) {
+  if (part.data.chunks == null) debugWithToast('part.data.chunks == null')
   if (!part.data.chunks?.length) return undefined
 
   try {
@@ -358,7 +369,10 @@ async function doRequest(
         switch (part.type) {
           case UMPPartId.STREAM_PROTECTION_STATUS: {
             const streamProtectionStatus = decodePart(part, StreamProtectionStatus)
-            if (!streamProtectionStatus) break
+            if (!streamProtectionStatus) {
+              debugWithToast('streamProtectionStatus == null')
+              break
+            }
 
             if (streamProtectionStatus.status === 3) {
               invalidPoToken = true
@@ -374,7 +388,14 @@ async function doRequest(
           }
           case UMPPartId.SABR_REDIRECT: {
             const sabrRedirect = decodePart(part, SabrRedirect)
-            if (!sabrRedirect?.url) break
+            if (!sabrRedirect) {
+              debugWithToast('sabrRedirect == null')
+              break
+            }
+            if (!sabrRedirect?.url) {
+              debugWithToast('sabrRedirect.url == null')
+              break
+            }
 
             currentState.sabrStreamState.sabrUrl = sabrRedirect.url
             shouldRetry = true
@@ -391,6 +412,7 @@ async function doRequest(
                 mediaHeader.formatId.xtags === xtags
               ) {
                 if (operationInputs.isInit && mediaHeader.isInitSeg) {
+                  debugWithToast('mediaHeader.isInitSeg', operationInputs, mediaHeader)
                   mediaHeaderId = mediaHeader.headerId
                 } else if (!operationInputs.isInit && mediaHeader.sequenceNumber === operationInputs.sequenceNumber) {
                   mediaHeaderId = mediaHeader.headerId
