@@ -333,7 +333,7 @@ export default defineComponent({
       })
     })
 
-    const defaultShortcutPlaybackRates = [0.25, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0]
+    const defaultShortcutPlaybackRates = [0.25, 0.5, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 6.0, 8.0, 10.0]
     const shortcutPlaybackRates = computed(() => {
       const maxPlaybackRate = maxVideoPlaybackRate.value
 
