@@ -892,6 +892,7 @@ Video:
   Station: İstasyon
   Playlist:
     Unavailable videos are hidden: 1 kullanılamayan video gizlendi | {count} kullanılamayan video gizlendi
+  Premiere: İlk gösterim
 Playlist:
   #& About
   View Full Playlist: 'Tüm oynatma listesini görüntüle'
@@ -962,6 +963,7 @@ Comments:
   View {replyCount} replies from {channelName} and others: '{channelName} kanalından ve diğerlerinden {replyCount} yanıtı görüntüle'
   Loading replies: Yanıtlar yükleniyor...
   Hide Replies: Yanıtı gizle | Yanıtları gizle
+  Comments are turned off: Yorumlar kapalı
 Up Next: 'Sonraki'
 
 # Toast Messages

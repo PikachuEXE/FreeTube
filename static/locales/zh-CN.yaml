@@ -844,6 +844,7 @@ Video:
   Station: Station 直播
   Playlist:
     Unavailable videos are hidden: 隐藏了 1 个不可用视频 | 隐藏了 {count} 个不可用视频
+  Premiere: 首映
 Playlist:
   #& About
   View Full Playlist: '查看完整播放列表'
@@ -913,6 +914,7 @@ Comments:
   View 1 reply from {channelName}: 查看 1 条来自 {channelName}的回复
   View {replyCount} replies from {channelName} and others: 查看 {replyCount} 条来自 {channelName} 和其他频道的回复
   Loading replies: 正在加载回复…
+  Comments are turned off: 已关闭评论
 Up Next: 'Up Next'
 
 # Toast Messages

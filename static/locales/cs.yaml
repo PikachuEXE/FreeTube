@@ -834,7 +834,7 @@ Video:
     OpeningTemplate: Otevřít {videoOrPlaylist} v {externalPlayer}...
     video: video
     OpenInTemplate: Otevřít v {externalPlayer}
-  Premieres: Premiéra
+  Premieres: Premiéry
   Show Super Chat Comment: Zobrazit komentář Super Chat
   Scroll to Bottom: Posunout dolů
   Upcoming: Nadcházející
@@ -892,6 +892,7 @@ Video:
   Station: Stanice
   Playlist:
     Unavailable videos are hidden: Je skyto 1 nedostupné video | Je skryto {count} nedostupných videí
+  Premiere: Premiéra
 Playlist:
   #& About
   View Full Playlist: 'Zobrazit celý seznam skladeb'
@@ -962,6 +963,7 @@ Comments:
   View 1 reply from {channelName}: Zobrazit 1 odpověď od {channelName}
   View {replyCount} replies from {channelName} and others: Zobrazit {replyCount} odpovědí od {channelName} a dalších
   Loading replies: Načítání odpovědí…
+  Comments are turned off: Komentáře jsou vypnuty
 Up Next: 'Další'
 
 #Tooltips
