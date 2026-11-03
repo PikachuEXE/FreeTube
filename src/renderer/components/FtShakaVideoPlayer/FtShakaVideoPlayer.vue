@@ -743,9 +743,9 @@ function getPlayerConfig(format, useAutoQuality = false) {
     // YouTube uses these values and they seem to work well in FreeTube too,
     // so we might as well use them
     streaming: {
-      bufferingGoal: 180,
+      bufferingGoal: 720,
       rebufferingGoal: 0.02,
-      bufferBehind: 300
+      bufferBehind: 1200,
     },
     manifest: {
       disableVideo: format === 'audio',
