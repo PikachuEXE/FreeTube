@@ -2,6 +2,7 @@
 <template>
   <div
     class="ft-input-component"
+    :data-settings-search-label="showLabel && label ? label : placeholder"
     :class="{
       search: isSearch,
       forceTextColor,
@@ -382,6 +383,7 @@ function handleOptionClick(index) {
   searchState.showOptions = false
   searchState.isPointerInList = false
   inputData.value = visibleDataList.value[index]
+  searchState.keyboardSelectedOptionIndex = -1
   emit('input', inputData.value)
   handleClick()
 }

@@ -192,6 +192,7 @@ User Playlists:
   Export list of URLs: Liste der URLs exportieren
   Move Video to the Top: Video nach oben verschieben
   Move Video to the Bottom: Video nach unten verschieben
+  This playlist is private or does not exist.: Diese Wiedergabeliste ist privat oder existiert nicht.
 History:
   # On History Page
   History: Verlauf
@@ -379,11 +380,11 @@ Settings:
     Enable Theatre Mode by Default: Kinomodus standardmäßig aktivieren
     Default Volume: Standard-Lautstärke
     Default Playback Rate: Standard-Wiedergabegeschwindigkeit
-    Default Video Format:
-      Default Video Format: Standard-Videoformat
+    Default Media Format:
       Dash Formats: DASH-Formate
       Legacy Formats: Veraltete Formate
       Audio Formats: Audioformate
+      Default Media Format: Standard-Medienformat
     Default Quality:
       Default Quality: Standardqualität
       Auto: Automatisch
@@ -418,7 +419,7 @@ Settings:
         Forbidden Characters: Unerlaubte Zeichen
         Empty File Name: Leerer Dateiname
       File Name Tooltip: Du kannst die folgenden Variablen verwenden. %Y Jahr 4-stellig. %M Monat 2 Ziffern. %D Tag 2 Ziffern. %H Stunde 2 Ziffern. %N Minute 2 Ziffern. %S Sekunde 2 Ziffern. %T Millisekunde 3 Ziffern. %s Video-Sekunde. %t Video Millisekunde 3 Ziffern. %i Video-ID.
-      Mode: Screenshot-Modus
+      Mode: Bildschirmfoto-Modus
     Enter Fullscreen on Display Rotate: Beim Drehen des Bildschirms zu Vollbild wechseln
     Skip by Scrolling Over Video Player: Überspringen durch Scrollen
     Autoplay Interruption Timer: Abbruch-Timer für Automatische Wiedergabe
@@ -565,6 +566,7 @@ Settings:
     Hide Subscriptions Posts: Beiträge aus Abos ausblenden
     Add: Hinzufügen
     Remove: Entfernen
+    Hide Channel Shows: Kanal "Shows" Tab ausblenden
   The app needs to restart for changes to take effect. Restart and apply change?: Die App muss neu gestartet werden, damit die Änderungen wirksam werden. Neu starten und Änderung übernehmen?
   Proxy Settings:
     Ip: IP-Adresse
@@ -600,7 +602,7 @@ Settings:
     'DeArrow Thumbnail Generator API Url (Default is https://dearrow-thumb.ajay.app)': DeArrow-Thumbnail-Generator-API-URL (Standard ist https://dearrow-thumb.ajay.app)
     Excluded Channels:
       Excluded Channels: Ausgeschlossene Kanäle
-      Disabled Message: Einige Kanäle wurden anhand ihrer ID ausgeschlossen und werden nicht verarbeitet. Die Funktion ist gesperrt, während diese IDs aktualisiert werden.
+      Disabled Message: Einige Kanäle wurden anhand ihrer ID ausgeschlossen und werden nicht verarbeitet. Die Funktion ist gesperrt, während diese IDs aktualisiert werden
       Tooltip: Geben Sie eine Kanal-ID ein, um SponsorBlock zu deaktivieren. Sponsoren-Segmente in Videos dieses Kanals werden dann nicht übersprungen. Die eingegebene Kanal-ID muss exakt übereinstimmen; bei der Eingabe wird zwischen Groß- und Kleinschreibung unterschieden.
   External Player Settings:
     Ignore Unsupported Action Warnings: Warnungen vor nicht unterstützten Aktionen ignorieren
@@ -634,6 +636,9 @@ Settings:
     Set Password: Passwort festlegen
   Sort Settings Sections (A-Z): Einstellungsabschnitte sortieren (A–Z)
   Return to Settings Menu: Zurück zum Einstellungsmenü
+  Search Settings: Einstellungen durchsuchen
+  Settings found: 1 Einstellung gefunden | {count} Einstellungen gefunden
+  No Matching Settings: Es wurden keine Einstellungen gefunden, die Ihrer Suche entsprechen.
 About:
   #On About page
   About: Über
@@ -691,6 +696,7 @@ Channel:
     Details: Details
     Location: Standort
     Joined: Beigetreten
+    Links: Links
   Added channel to your subscriptions: Der Kanal wurde deinen Abos hinzugefügt
   Removed subscription from {count} other channel(s): Abo von {count} anderem Kanal / anderen Kanälen entfernt
   Channel has been removed from your subscriptions: Der Kanal wurde von deinen Abos entfernt
@@ -724,6 +730,9 @@ Channel:
     This channel does not currently have any courses: Dieser Kanal hat derzeit keine Kurse
     Courses: Kurse
   View All: Alles anzeigen
+  Shows:
+    Shows: Shows
+    This channel does not currently have any shows: Dieser Kanal hat derzeit keine Shows
 Video:
   Open in YouTube: In YouTube öffnen
   Copy YouTube Link: YouTube-Link kopieren
@@ -826,7 +835,7 @@ Video:
     Hide Stats: Statistiken ausblenden
     Autoplay is off: Automatische Wiedergabe ist ausgeschaltet
     Autoplay is on: Automatische Wiedergabe ist eingeschaltet
-  IP block: YouTube hat deine IP-Adresse für die Videowiedergabe gesperrt. Bitte versuche, einen anderen VPN oder Proxy zu nutzen.
+  IP block: YouTube hat Ihre IP-Adresse für das Ansehen von Videos gesperrt, oder dieses Video enthält möglicherweise Inhalte mit Minderjährigen, auf die YouTube für nicht angemeldete Nutzer den Zugriff einschränkt. Sollte es sich um eine IP-Sperre handeln, versuchen Sie es mit einem anderen VPN oder Proxy.
   Unlisted: Nicht gelistet
   MembersOnly: Videos, die nur für Mitglieder bestimmt sind, können mit FreeTube nicht angesehen werden, da sie einen Google-Login und eine kostenpflichtige Kanalmitgliedschaft erfordern.
   AgeRestricted: Videos mit Altersbeschränkung können mit FreeTube nicht angesehen werden, da sie eine Google-Anmeldung und die Verwendung eines altersgeprüften YouTube-Kontos erfordern.
@@ -1002,7 +1011,7 @@ Tooltips:
     Fetch Feeds from RSS: Wenn aktiviert, verwendet FreeTube RSS anstelle der Standardmethode, um deinen Abo-Feed abzurufen. RSS ist schneller und verhindert die IP-Sperren, liefert aber bestimmte Informationen wie Videodauer, den Live-Status oder Beiträge nicht
     Fetch Automatically: Wenn aktiviert, ruft FreeTube deine Abos automatisch beim Start und beim Öffnen eines neuen Fensters ab.
   Player Settings:
-    Default Video Format: Lege die Formate fest, die bei der Wiedergabe eines Videos verwendet werden. DASH-Formate können höhere Auflösungen wiedergeben. Altformate sind auf maximal 360p beschränkt, verbrauchen aber weniger Bandbreite. Audioformate sind reine Audiostreams.
+    Default Media Format: Lege die Formate fest, die bei der Wiedergabe eines Videos verwendet werden. DASH-Formate können höhere Auflösungen wiedergeben. Altformate sind auf maximal 360p beschränkt, verbrauchen aber weniger Bandbreite. Audioformate sind reine Audiostreams.
     Proxy Videos Through Invidious: Stellt eine Verbindung mit Invidious her, um Videos bereitzustellen, anstatt eine direkte Verbindung mit YouTube herzustellen.
     Scroll Playback Rate Over Video Player: Während sich der Cursor über dem Video befindet, halte die Strg-Taste (Befehlstaste auf dem Mac) gedrückt und bewege das Mausrad vorwärts oder rückwärts, um die Abspielgeschwindigkeit zu steuern. Halte die Strg-Taste (Befehlstaste auf dem Mac) gedrückt und klicke mit der linken Maustaste, um schnell zur Standard-Wiedergabegeschwindigkeit zurückzukehren (1x, sofern sie nicht in den Einstellungen geändert wurde).
     Skip by Scrolling Over Video Player: Verwende das Scrollrad, um durch das Video zu springen, MPV-Stil.

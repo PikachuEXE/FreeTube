@@ -197,6 +197,7 @@ const state = {
   hideChannelReleases: false,
   hideChannelPodcasts: false,
   hideChannelCourses: false,
+  hideChannelShows: false,
   hideChannelShorts: false,
   hideChannelSubscriptions: false,
   hideCommentLikes: false,
@@ -458,6 +459,27 @@ const customState = {
 }
 
 const customGetters = {
+  getDefaultPlayback(state) {
+    return Math.round((state['defaultPlayback'] + Number.EPSILON) * 100) / 100
+  },
+
+  getChannelsHiddenIdSet(state) {
+    const channelsHidden = JSON.parse(state.channelsHidden)
+
+    /** @type {Set<string>} */
+    const set = new Set()
+
+    for (const channel of channelsHidden) {
+      // Legacy support
+      if (typeof channel === 'string') {
+        set.add(channel)
+      } else if (typeof channel.name === 'string') {
+        set.add(channel.name)
+      }
+    }
+
+    return set
+  }
 }
 
 const customMutations = {}

@@ -99,11 +99,13 @@ Subscriptions:
   Load More Videos: 'Hlaða inn fleiri myndskeiðum'
   Error Channels: Hugbúnaðarrásir með villum
   Disabled Automatic Fetching: Þú hefur gert sjálfvirkt niðurhal áskrifta óvirkt. Endurlestu áskriftirnar og þær munu birtast hér.
-  Empty Channels: Rásirnar sem þú ert með í áskrift eru er ekki með nein myndskeið.
+  Empty Channels: Rásirnar sem þú ert með í áskrift eru ekki með nein myndskeið.
   Subscriptions Tabs: Áskriftaflipar
   All Subscription Tabs Hidden: Allir áskriftaflipar eru faldir. Til að sjá efni hér, skaltu gera einhverja flipa sýnilega í "{subsection}" hlutanum í "{settingsSection}".
   Load More Posts: Hlaða inn fleiri færslum
   Empty Posts: Rásirnar sem þú ert áskrifandi að eru ekki með neinar færslur.
+  Posts:
+    RSS Message: YouTube býður ekki upp á RSS-strauma fyrir færslur. Afvirktu stillinguna "{rssSetting}" til að skoða færslur eða virktu stillinguna "{hideSetting}" til að fela þennan flipa.
 More: 'Meira'
 Trending:
   Trending: 'Í umræðunni'
@@ -197,6 +199,7 @@ User Playlists:
   Export list of URLs: Flytja út lista með vefslóðum
   Move Video to the Top: Færa myndskeið efst
   Move Video to the Bottom: Færa myndskeið neðst
+  This playlist is private or does not exist.: Þessi spilunarlisti er lokaður eða ekki tiltækur.
 History:
   # On History Page
   History: 'Áhorf'
@@ -384,11 +387,11 @@ Settings:
     Enable Theatre Mode by Default: 'Sjálfgefið virkja bíóham (theater mode)'
     Default Volume: 'Sjálfgefinn hljóðstyrkur'
     Default Playback Rate: 'Sjálfgefinn afspilunarhraði'
-    Default Video Format:
-      Default Video Format: 'Sjálfgefið skráasnið myndskeiða'
+    Default Media Format:
       Dash Formats: 'DASH-skráasnið'
       Legacy Formats: 'Eldri skráasnið'
       Audio Formats: 'Hljóðskráasnið'
+      Default Media Format: Sjálfgefið snið myndskráa
     Default Quality:
       Default Quality: 'Sjálfgefin gæði'
       Auto: 'Sjálfvirkt'
@@ -518,6 +521,7 @@ Settings:
     Hide Subscriptions Posts: Fela áskriftarfærslur
     Add: Bæta við
     Remove: Fjarlægja
+    Hide Channel Shows: Fela rásarflipann "Þættir"
   Data Settings:
     Data Settings: 'Gögn'
     Select Export Type: 'Veldu tegund útflutnings'
@@ -566,6 +570,7 @@ Settings:
     Non-transferable setting key: 'Ekki-flytjanlegur stillingalykill: {key}'
     All settings have been successfully imported: Tókst að flytja inn allar stillingar
     All settings have been successfully exported: Tókst að flytja út allar stillingar
+    Setting object has insufficient data, skipping item: Grunnstillingaatriðið er ekki með næg gögn, sleppi því
   Proxy Settings:
     Proxy Settings: 'Milliþjónn (proxy)'
     Enable Tor / Proxy: 'Virkja Tor / milliþjón'
@@ -632,6 +637,9 @@ Settings:
     Password Settings: Lykilorð
   Sort Settings Sections (A-Z): Röðun stillingahluta (A-Ö)
   Return to Settings Menu: Fara aftur í stillingavalmynd
+  Search Settings: Leita að stillingum
+  Settings found: 1 stilling fannst | {count} stillingar fundust
+  No Matching Settings: Engar stillingar samsvöruðu leitinni þinni.
 About:
   #On About page
   About: 'Um hugbúnaðinn'
@@ -701,6 +709,7 @@ Profile:
   Create Profile Name: Útbúa heiti á notkunarsnið
   Open Profile Dropdown: Opna fellivalmynd notkunarsniðs
   Close Profile Dropdown: Loka fellivalmynd notkunarsniðs
+  Go To Profile Manager: Fara í umsýslu notkunarsniða
 Channel:
   Subscribe: 'Gerast áskrifandi'
   Unsubscribe: 'Segja upp áskrift'
@@ -715,6 +724,7 @@ Channel:
       Newest: 'Nýjast'
       Oldest: 'Elst'
       Most Popular: 'Vinsælast'
+    This channel has videos but none could be displayed, try fetching more: Þessi rás er með myndskeið, en ekki var hægt að birta nein þeirra, reyni að sækja fleiri
   Playlists:
     Playlists: 'Spilunarlistar'
     This channel does not currently have any playlists: 'Þessi rás er ekki með neina spilunarlista'
@@ -732,6 +742,7 @@ Channel:
     Details: Nánar
     Joined: Skráði sig
     Location: Staðsetning
+    Links: Tenglar
   This channel does not exist: Þessi rás er ekki til
   This channel does not allow searching: Þessi rás gefur ekki kost á að leita
   This channel is age-restricted and currently cannot be viewed in FreeTube.: Þessi rás er með aldurstakmark og er í augnablikinu ekki hægt að skoða í FreeTube.
@@ -762,6 +773,9 @@ Channel:
     Courses: Kennsluefni
     This channel does not currently have any courses: Þessi rás er ekki með neitt kennsluefni
   View All: Skoða allt
+  Shows:
+    Shows: Þættir
+    This channel does not currently have any shows: Þessi rás er ekki með neina þætti
 Video:
   Mark As Watched: 'Merkja sem búið að horfa á'
   Remove From History: 'Fjarlægja úr áhorfsferli'
@@ -866,7 +880,7 @@ Video:
   Unlisted: Óskráð
   MembersOnly: Ekki er hægt að horfa á myndskeið einungis fyrir meðlimi með FreeTube þar sem þau krefjast innskráningar á Google og greiddu þátttökugjaldi á rás innsendandans.
   AgeRestricted: Ekki er hægt að horfa á aldurstakmörkuð myndskeið með FreeTube þar sem þau krefjast innskráningar á Google og notkunar á aldursvottuðum YouTube-reikningi.
-  IP block: YouTube hefur útilokað IP-vistfang þitt frá því að horfa á myndskeið. Prófaðu að skipta yfir á annan VPN eða milliþjón.
+  IP block: YouTube hefur útilokað IP-vistfang þitt frá því að horfa á myndskeið, nú eða að myndskeiðið inniheldur efni með börnum undir lögaldri sem YouTube takmarkar aðgang að fyrir notendur sem ekki eru skráðir inn. Ef þetta er útilokun á IP-vistfangi skaltu prófa að skipta yfir á annan VPN eða milliþjón.
   DeArrow:
     Show Original Details: Birta upprunalegar nánari upplýsingar
     Show Modified Details: Birta breyttar nánari upplýsingar
@@ -883,6 +897,14 @@ Video:
   Expand Playlist: Fletta út spilunarlista
   Station: Stöð
   Premiere: Frumsýning
+  Enable SponsorBlock on Channel: Virkja SponsorBlock á rás
+  Disable SponsorBlock on Channel: Gera SponsorBlock óvirkt á rás
+  AI: AI
+  'AI: Content was made with AI': 'AI: Efnið var framleitt með vitlíki'
+  How this was made: Hvernig þetta var framleitt
+  Reload Page: Endurlesa síðu
+  Playlist:
+    Unavailable videos are hidden: 1 ótiltækt myndskeið er falið | {count} ótiltæk myndskeið eru falin
 Playlist:
   #& About
   View Full Playlist: 'Sjá allan spilunarlistann'
@@ -969,7 +991,7 @@ Tooltips:
     Open Deep Links In New Window: Slóðir sem beint er til FreeTube, til dæmis með endurbeiningum vafraviðbóta eða skipanalínuviðföngum, verða opnaðar í nýjum glugga.
   Player Settings:
     Proxy Videos Through Invidious: 'Mun tengjast við Invidious til að miðla myndskeiðum í stað þess að tengjast beint við YouTube.'
-    Default Video Format: 'Stillu skráasniðin sem notuð eru við afspilun myndskeiða. DASH-snið (Dynamic Adaptive Streaming over HTTP) er hægt að spila í meiri gæðum. Eldri snið takmarkast við 360p en nota minni bandbreidd. Hljóðsnið eru streymi einungis með hljóði.'
+    Default Media Format: 'Stillu skráasniðin sem notuð eru við afspilun myndskeiða. DASH-snið (Dynamic Adaptive Streaming over HTTP) er hægt að spila í meiri gæðum. Eldri snið takmarkast við 360p en nota minni bandbreidd. Hljóðsnið eru streymi einungis með hljóði.'
     Scroll Playback Rate Over Video Player: Á meðan bendillinn er yfir myndspilaranum, ýttu og haltu niðri Ctrl-lyklinum ('Command' slaufulykill á Mac) og skrunaðu með músarhjólinu áfram eða afturábak til að stýra hraða afspilunar. Ýttu og haltu niðri Ctrl-lyklinum ('Command' slaufulykill á Mac) og smelltu með vinstri músarhnappnum til að snúa aftur í sjálfgefinn hraða (1x nema ef því hefur verið breytt í stillingunum).
     Skip by Scrolling Over Video Player: Nota skrunhjólið til að fletta í gegnum myndskeið, svipað og í MPV.
   Subscription Settings:
@@ -986,6 +1008,7 @@ Tooltips:
     Ignore Default Arguments: Ekki senda nein sjálfgefin viðföng til utanaðkomandi spilarans önnur en URL-slóð myndskeiðs (t.d. afspilunarhraða, slóð spilunarlista, o.s.frv.). Sérsniðin viðföng verða send eftir sem áður.
   Experimental Settings:
     Replace HTTP Cache: Gerir HTTP-skyndiminni Electron óvirkt og virkjar sérsniðna minnislæga skyndiminnis-diskmynd. Veldur aukinni notkun á vinnsluminni.
+    Disable Hardware Acceleration: Gerir vélbúnaðarhröðun á skjákorti óvirka. Gæti lagað vandamál í myndmerki, en mun líklega hamla afköstum.
   Distraction Free Settings:
     Hide Channels: Settu inn auðkenni rásar til að fela öll myndskeið, spilunarlista og sjálfa rásina við leit eða því sem er vinsælast, mest skoðað og mælt með. Auðkenni rásarinnar sem sett er inn þarf að vera nákvæmlega stafrétt og tekur tillit til hástafa/lágstafa.
     Hide Subscriptions Live: Þessa stillingu er hægt að taka yfir með "{appWideSetting}" stillingunni fyrir allt forritið, í "{subsection}" hlutanum í "{settingsSection}"
@@ -1147,3 +1170,5 @@ Compact side navigation: Þjöppuð hliðarflakkstika
 Expand side navigation: Fella út hliðarflakkstiku
 Screenshot Clipboard Success: Vistaði skjámynd á klippispjald
 Screenshot Clipboard Error: Mistókst að vista skjámynd á klippispjald
+SponsorBlock Disabled on Channel: SponsorBlock er óvirkt á {channel}
+SponsorBlock Enabled on Channel: SponsorBlock er virkt á {channel}

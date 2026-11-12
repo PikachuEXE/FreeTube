@@ -197,6 +197,7 @@ User Playlists:
   Move Video to the Top: Mută videoclipul sus
   Move Video to the Bottom: Mută videoclipul jos
   Export list of URLs: Exportare listă de URLuri
+  This playlist is private or does not exist.: Această listă de redare este privată sau nu există.
 History:
   # On History Page
   History: 'Istoric'
@@ -383,11 +384,11 @@ Settings:
     Enable Theatre Mode by Default: 'Activați modul teatru în mod implicit'
     Default Volume: 'Volum implicit'
     Default Playback Rate: 'Viteza de redare implicită'
-    Default Video Format:
-      Default Video Format: 'Format video implicit'
+    Default Media Format:
       Dash Formats: 'Formate DASH'
       Legacy Formats: 'Formate vechi'
       Audio Formats: 'Formate audio'
+      Default Media Format: Format Media Implicit
     Default Quality:
       Default Quality: 'Calitate implicită'
       Auto: 'Automat'
@@ -589,7 +590,7 @@ Settings:
     City: Oraș
     Region: Regiune
     Country: Țară
-    Ip: IP
+    Ip: Ip
     Your Info: Informațiile tale
     Clicking on Test Proxy will send a request to: Făcând clic pe Testați Proxy se va trimite o cerere către
     Test Proxy: Testați Proxy
@@ -965,7 +966,7 @@ Tooltips:
     DefaultCustomArgumentsTemplate: "(Implicit: '{defaultCustomArguments}')"
     Ignore Default Arguments: Nu trimiteți niciun argument implicit către playerul extern în afară de URL-ul video (de exemplu, rata de redare, URL-ul listei de redare etc.). Argumentele personalizate vor fi transmise în continuare.
   Player Settings:
-    Default Video Format: Setați formatele utilizate la redarea unui videoclip. Formatele DASH pot reda calități superioare. Formatele tradiționale sunt limitate la maximum 360p, dar utilizează mai puțină lățime de bandă. Formatele audio sunt doar fluxuri audio.
+    Default Media Format: Setați formatele utilizate la redarea unui videoclip. Formatele DASH pot reda calități superioare. Formatele tradiționale sunt limitate la maximum 360p, dar utilizează mai puțină lățime de bandă. Formatele audio sunt doar fluxuri audio.
     Proxy Videos Through Invidious: Se va conecta la Invidious pentru a servi videoclipuri în loc să facă o conexiune directă la YouTube.
     Scroll Playback Rate Over Video Player: În timp ce cursorul se află deasupra videoclipului, țineți apăsată tasta Control (tasta Command pe Mac) și derulați rotița mouse-ului înainte sau înapoi pentru a controla rata de redare. Țineți apăsată tasta Control (tasta Command pe Mac) și faceți clic cu butonul stâng al mouse-ului pentru a reveni rapid la rata de redare implicită (1x, cu excepția cazului în care aceasta a fost modificată în setări).
     Skip by Scrolling Over Video Player: Utilizați rotița de derulare pentru a trece prin videoclip, stil MPV.
@@ -1008,7 +1009,7 @@ Clipboard:
 Hashtag:
   Hashtag: Hashtag
   This hashtag does not currently have any videos: Acest hashtag nu are momentan niciun videoclip
-Ok: OK
+Ok: Ok
 Go to page: Mergeți la {page}
 Close Banner: Închideți bannerul
 Age Restricted:

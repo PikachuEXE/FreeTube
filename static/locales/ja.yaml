@@ -192,6 +192,7 @@ User Playlists:
   Export list of URLs: URL のリストをエクスポート
   Move Video to the Top: 動画を一番上に移動
   Move Video to the Bottom: 動画を一番下に移動
+  This playlist is private or does not exist.: このプレイリストは非公開であるか、存在しません。
 History:
   # On History Page
   History: '履歴'
@@ -378,11 +379,11 @@ Settings:
     Enable Theatre Mode by Default: 'デフォルトでシアターモードを有効にする'
     Default Volume: 'デフォルトの音量'
     Default Playback Rate: 'デフォルトの再生速度'
-    Default Video Format:
-      Default Video Format: '動画形式の設定'
+    Default Media Format:
       Dash Formats: 'DASH 形式'
       Legacy Formats: '旧形式'
       Audio Formats: '音声形式'
+      Default Media Format: 既定のメディア形式
     Default Quality:
       Default Quality: '動画品質の設定'
       Auto: '自動'
@@ -563,6 +564,7 @@ Settings:
     Hide Subscriptions Posts: 登録チャンネルの投稿を非表示
     Add: 追加
     Remove: 削除
+    Hide Channel Shows: 「番組」タブを非表示にする
   The app needs to restart for changes to take effect. Restart and apply change?: 変更の反映には、アプリの再起動が必要です。再起動して変更を適用しますか？
   Proxy Settings:
     Error getting network information. Is your proxy configured properly?: ネットワーク情報の取得中にエラーが発生しました。プロキシーを正しく設定してますか?
@@ -632,6 +634,9 @@ Settings:
     Password: パスワード
   Sort Settings Sections (A-Z): 設定項目の並べ替え（A-Z）
   Return to Settings Menu: 設定に戻る
+  Search Settings: 設定の検索
+  Settings found: 1件の設定が見つかりました | {count} 件の設定が見つかりました
+  No Matching Settings: 検索条件に一致する設定はありません。
 About:
   #On About page
   About: 'FreeTube について'
@@ -689,6 +694,7 @@ Channel:
     Details: 詳細
     Joined: 参加日
     Location: 場所
+    Links: リンク
   Added channel to your subscriptions: チャンネルを登録しました
   Channel has been removed from your subscriptions: チャンネルがあなたの登録チャンネルから削除されました
   Removed subscription from {count} other channel(s): ほかの {count} チャンネルから登録を削除しました
@@ -722,6 +728,9 @@ Channel:
     Courses: コース
     This channel does not currently have any courses: このチャンネルには現在コースはありません
   View All: すべて表示
+  Shows:
+    Shows: 番組
+    This channel does not currently have any shows: このチャンネルには現在、番組がありません
 Video:
   Open in YouTube: 'YouTube で表示'
   Copy YouTube Link: 'YouTube リンクのコピー'
@@ -823,7 +832,7 @@ Video:
     Show Stats: 統計を表示
     Autoplay is off: 自動再生 オフ
     Autoplay is on: 自動再生 オン
-  IP block: YouTube はあなたのIPアドレスからの動画視聴をブロックしました。別の VPN またはプロキシに切り替えてみてください。
+  IP block: YouTube により、お使いの IP アドレスからの動画視聴がブロックされているか、またはこの動画には、ログインしていないユーザーへのアクセスを YouTube が制限している未成年者が登場するコンテンツが含まれている可能性があります。IP ブロックによるものである場合は、別の VPN やプロキシに切り替えてみてください。
   Unlisted: 限定公開
   MembersOnly: メンバー限定動画は Google にログインし、投稿チャンネルに課金する必要があるので FreeTube から直接見ることはできません。
   AgeRestricted: 年齢制限がかかっている 動画 は Google にログインしておりかつ年齢確認を済ましている YouTube アカウントが必要なため、FreeTube から直接見ることはできません。
@@ -991,7 +1000,7 @@ Tooltips:
     Fetch Feeds from RSS: 有効にすると、FreeTube は通常の方法の代わりに RSS を使用して購読フィードを取得します。RSS は高速で IP ブロックを防ぎますが、動画の長さやライブ配信などの情報は提供されません
     Fetch Automatically: 有効にすると、FreeTube は起動時や新しいウィンドウを開いたときに自動的に登録チャンネルフィードを取得します。
   Player Settings:
-    Default Video Format: 動画を再生する際に使用する形式を設定します。DASH形式はより高い画質で再生できます。旧形式は最大360pに制限されますが、帯域幅の使用量が少なくなります。音声形式は音声のみです。
+    Default Media Format: 動画を再生する際に使用する形式を設定します。DASH形式はより高い画質で再生できます。旧形式は最大360pに制限されますが、帯域幅の使用量が少なくなります。音声形式は音声のみです。
     Proxy Videos Through Invidious: YouTube に直接接続するのではなく、Invidious を通じて動画を提供します。
     Scroll Playback Rate Over Video Player: カーソルが動画上にあるとき、Ctrl キー（Mac では Command キー）を押したまま、マウスホイールを前後にスクロールして再生速度を調整します。Control キー（Mac では Command キー）を押したままマウスを左クリックすると、すぐにデフォルトの再生速度（設定を変更していない場合は 1 x）に戻ります。
     Skip by Scrolling Over Video Player: MPVスタイルでスクロールホイールを使って動画をスキップします。

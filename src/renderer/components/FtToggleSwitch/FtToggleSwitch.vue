@@ -1,6 +1,7 @@
 <template>
   <div
     class="switch-ctn"
+    :data-settings-search-label="label"
     :class="{
       compact,
       disabled: disabled,
@@ -29,7 +30,6 @@
         class="selectTooltip"
         :position="tooltipPosition"
         :tooltip="tooltip"
-        :allow-newlines="tooltipAllowNewlines"
       />
     </label>
   </div>
@@ -64,10 +64,6 @@ const props = defineProps({
   tooltipPosition: {
     type: String,
     default: 'bottom-left'
-  },
-  tooltipAllowNewlines: {
-    type: Boolean,
-    default: false,
   },
 })
 

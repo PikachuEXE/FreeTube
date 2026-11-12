@@ -192,6 +192,7 @@ User Playlists:
   Export list of URLs: Eksportuj listę adresów URL
   Move Video to the Top: Przenieś film na początek
   Move Video to the Bottom: Przenieś film na koniec
+  This playlist is private or does not exist.: Ta playlista jest prywatna albo nie istnieje.
 History:
   # On History Page
   History: 'Historia'
@@ -378,11 +379,11 @@ Settings:
     Enable Theatre Mode by Default: 'Domyślnie włącz tryb kinowy'
     Default Volume: 'Domyślna głośność'
     Default Playback Rate: 'Domyślna szybkość odtwarzania'
-    Default Video Format:
-      Default Video Format: 'Domyślny format filmów'
+    Default Media Format:
       Dash Formats: 'Formaty DASH'
       Legacy Formats: 'Stare formaty'
       Audio Formats: 'Formaty audio'
+      Default Media Format: Domyślny format filmów
     Default Quality:
       Default Quality: 'Domyślna jakość'
       Auto: 'Auto'
@@ -564,6 +565,7 @@ Settings:
     Hide Subscriptions Posts: Schowaj wpisy z subskrypcji
     Add: Dodaj
     Remove: Usuń
+    Hide Channel Shows: Ukryj zakładkę „Programy” w kanale
   The app needs to restart for changes to take effect. Restart and apply change?: Aplikacja musi zostać ponownie uruchomiona, aby zmiany zostały wprowadzone. Uruchomić ponownie i zastosować zmiany?
   Proxy Settings:
     Your Info: O Tobie
@@ -636,6 +638,9 @@ Settings:
   SABR:
     Label: Włącz SABR jako back-end dla DASH-a
     Tooltip: W przyszłości SABR będzie jedynym back-endem DASH-a i nie będzie można go wyłączyć. Ten przełącznik został wprowadzony na wypadek, gdyby wczesna implementacja powodowała problemy.
+  Search Settings: Ustawienia wyszukiwania
+  Settings found: Znaleziono 1 ustawienie | Znaleziono {count} ustawień
+  No Matching Settings: Nie znaleziono wyników pasujących do Twojego wyszukiwania.
 About:
   #On About page
   About: 'O projekcie'
@@ -693,6 +698,7 @@ Channel:
     Tags:
       Tags: Tagi
       Search for: Szukaj „{tag}”
+    Links: Linki
   Added channel to your subscriptions: Dodano kanał do twoich subskrypcji
   Removed subscription from {count} other channel(s): Usunięto subskrypcje z {count} pozostałych kanałów
   Channel has been removed from your subscriptions: Kanał został usunięty z twoich subskrypcji
@@ -726,6 +732,9 @@ Channel:
     Courses: Kursy
     This channel does not currently have any courses: Na tym kanale nie ma obecnie żadnych kursów
   View All: Zobacz wszystkie
+  Shows:
+    Shows: Programy
+    This channel does not currently have any shows: Ten kanał nie ma obecnie żadnych programów
 Video:
   Mark As Watched: 'Oznacz jako obejrzany'
   Remove From History: 'Usuń z historii'
@@ -827,7 +836,7 @@ Video:
     Full Window: Pełne okno
     Autoplay is off: Autoodtwarzanie jest wyłączone
     Autoplay is on: Autoodtwarzanie jest włączone
-  IP block: YouTube uniemożliwił odtworzenie filmów blokując Twój adres IP. Możesz spróbować przełączyć się na inny, korzystając z VPN lub proxy.
+  IP block: Serwis YouTube zablokował Twój adres IP, uniemożliwiając oglądanie filmów, lub ten film może zawierać treści przedstawiające osoby niepełnoletnie, do których serwis YouTube ogranicza dostęp użytkownikom niezalogowanym. Jeśli jest to blokada adresu IP, spróbuj przełączyć się na inną sieć VPN lub serwer proxy.
   AgeRestricted: Filmy z ograniczeniem wiekowym nie mogą być odtwarzane przez FreeTube, ponieważ wymagają danych logowania do konta Google z potwierdzonym wiekiem użytkownika.
   MembersOnly: Filmy tylko dla wspierających nie mogą być odtwarzane przez FreeTube, ponieważ wymagają danych logowania do konta Googla oraz płatną subskrypcje kanału.
   Unlisted: Niepubliczny
@@ -1003,7 +1012,7 @@ Tooltips:
     External Link Handling: "Wybierz domyślne zachowanie kiedy odnośnik, który nie może zostać otworzony w FreeTube, został kliknięty.\nDomyślnie FreeTube otworzy kliknięty odnośnik w domyślnej przeglądarce.\n"
     Open Deep Links In New Window: Odnośniki URL przekazane do FreeTube (np. przez rozszerzenie przeglądarki, albo argumenty linii komend) są otwierane w nowym oknie.
   Player Settings:
-    Default Video Format: Ustaw formaty, które zostaną użyte do odtwarzania filmów. Formaty DASH obsługują wyższe rozdzielczości. Stare formaty są ograniczone do 360p, ale zużywają mniej przepustowości. Formaty audio odtwarzają tylko dźwięk.
+    Default Media Format: Ustaw formaty, które zostaną użyte do odtwarzania filmów. Formaty DASH obsługują wyższe rozdzielczości. Stare formaty są ograniczone do 360p, ale zużywają mniej przepustowości. Formaty audio odtwarzają tylko dźwięk.
     Proxy Videos Through Invidious: Filmy dostarczane będą poprzez Invidious, a nie przez bezpośrednie połączenie z YouTube.
     Scroll Playback Rate Over Video Player: Umieść kursor nad odtwarzaczem, przytrzymaj klawisz „Ctrl” („Command” na Mac-u) i przewijaj kółkiem myszy w górę i w dół, aby kontrolować szybkość odtwarzania. Przytrzymaj klawisz „Ctrl” („Command” na Mac-u) i kliknij lewym przyciskiem myszy, by szybko powrócić do domyślnej wartości (1x, chyba że została zmieniona w ustawieniach).
     Skip by Scrolling Over Video Player: Użyj kółka myszy, by przewijać film tak jak w MPV.

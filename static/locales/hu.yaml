@@ -200,6 +200,7 @@ User Playlists:
   Export list of URLs: Webcímek listába történő exportálása
   Move Video to the Top: Videó áthelyezése az elejére
   Move Video to the Bottom: Videó áthelyezése a végére
+  This playlist is private or does not exist.: Ez a lejátszási lista privát vagy nem létezik.
 History:
   # On History Page
   History: 'Előzmények'
@@ -386,11 +387,11 @@ Settings:
     Enable Theatre Mode by Default: 'A mozimód bekapcsolása alapértelmezetten'
     Default Volume: 'Alapértelmezett hangerő'
     Default Playback Rate: 'Alapértelmezett lejátszási sebesség'
-    Default Video Format:
-      Default Video Format: 'Alapértelmezett videóformátum'
+    Default Media Format:
       Dash Formats: 'DASH-formátumok'
       Legacy Formats: 'Örökölt formátumok'
       Audio Formats: 'Hangformátumok'
+      Default Media Format: Alapértelmezett médiaformátum
     Default Quality:
       Default Quality: 'Alapértelmezett felbontás'
       Auto: 'Automatikus'
@@ -572,6 +573,7 @@ Settings:
     Hide Subscriptions Posts: Feliratkozási bejegyzések elrejtése
     Add: Hozzáadás
     Remove: Eltávolítás
+    Hide Channel Shows: A „Műsorok” lap elrejtése a csatornán
   The app needs to restart for changes to take effect. Restart and apply change?: Az alkalmazásnak újra kell indulnia, hogy a változtatások életbe lépjenek. Induljon újra és alkalmazza a módosítást?
   Proxy Settings:
     City: Helység
@@ -644,6 +646,9 @@ Settings:
   SABR:
     Label: SABR engedélyezése mint DASH-háttérprogram
     Tooltip: A SABR lesz az egyetlen DASH-háttérprogram a jövőbeli kiadásokban, és nem lehet majd letiltani. Ez a kapcsoló arra az esetre szolgál, ha a korai megvalósítása helyrehozhatatlan problémákat okozna.
+  Search Settings: Keresési beállítások
+  Settings found: 1 beállítás található | {count} beállítás található
+  No Matching Settings: Nem található a keresésnek megfelelő beállítás.
 About:
   #On About page
   About: 'Névjegy'
@@ -746,6 +751,7 @@ Channel:
     Tags:
       Tags: Címkék
       Search for: „{tag}” címke keresése
+    Links: Hivatkozások
   This channel is age-restricted and currently cannot be viewed in FreeTube.: Ez a csatorna korhatáros, és jelenleg nem tekinthető meg a FreeTube alkalmazásban.
   Channel Tabs: Csatornalapok
   Live:
@@ -776,6 +782,9 @@ Channel:
     This channel does not currently have any courses: Ezen a csatornán jelenleg nincsenek tanfolyamok
     Courses: Tanfolyamok
   View All: Összes megtekintése
+  Shows:
+    Shows: Műsorok
+    This channel does not currently have any shows: Ezen a csatornán jelenleg nincsenek műsorok
 Video:
   Mark As Watched: 'Megjelölés megtekintettként'
   Remove From History: 'Eltávolítás az előzményekből'
@@ -877,7 +886,7 @@ Video:
     Playback will resume automatically when your connection comes back: A lejátszás automatikusan folytatódik, amikor a kapcsolat helyreáll.
     Autoplay is off: Az automatikus lejátszás ki van kapcsolva
     Autoplay is on: Az automatikus lejátszás be van kapcsolva
-  IP block: A YouTube letiltotta az IP-címét a videók megtekintéséhez. Próbáljon meg másik VPN-re vagy proxyra váltani.
+  IP block: A YouTube letiltotta az IP-címéről történő videómegtekintést, vagy előfordulhat, hogy a videó olyan tartalmat tartalmaz, amelyben kiskorúak szerepelnek, és amelyhez a YouTube korlátozza a hozzáférést a bejelentkezés nélkül használók számára. Ha IP-cím alapú tiltásról van szó, akkor próbáljon meg másik VPN-re vagy proxyra váltani.
   Unlisted: Listázatlan
   AgeRestricted: A FreeTube-on nem lehet korhatáros videókat megtekinteni, mivel ezekhez Google-bejelentkezés és korhatár-ellenőrzött YouTube-fiók használata szükséges.
   MembersOnly: A csak tagoknak szóló videók nem tekinthetők meg a FreeTube-on, mivel ezekhez Google-bejelentkezés és fizetett tagság szükséges a feltöltő csatornájához.
@@ -1000,7 +1009,7 @@ Tooltips:
   General Settings:
     Preferred API Backend: Válassza ki a háttéralkalmazást, amelyet a FreeTube használ az adatok megszerzéséhez. A helyi API egy beépített kinyerő. Az Invidious API használatához Invidious-kiszolgáló szükséges.
     Region for Trending: A felkapottak régiója lehetővé teszi a választást, hogy melyik ország felkapott videóit szeretné megtekinteni.
-    Invidious Instance: Az Invidious-példány, amelyhez a FreeTube API-hívások céljából kapcsolódik. A beállítás módosításai csak a jelenlegi ablakra vonatkoznak, kivéve, ha ezt a példányt alapértelmezettként állítja be.
+    Invidious Instance: Az Invidious példány, amelyhez a FreeTube API-hívások céljából kapcsolódik. A beállítás módosításai csak a jelenlegi ablakra vonatkoznak, kivéve, ha ezt a példányt alapértelmezettként állítja be.
     Thumbnail Preference: A FreeTube-ban minden videó bélyegképe az alapértelmezett miniatűr helyett a videóból kiválasztott képkockára lesz cserélve, amely elmosódott vagy rejtett is lehet.
     Fallback to Non-Preferred Backend on Failure: Ha a választott API-val probléma adódik, a FreeTube automatikusan megpróbálja a nem előnyben részesített API-t használni tartalék módszerként, ha ez a funkció engedélyezve van.
     External Link Handling: "Válassza ki az alapértelmezett viselkedést, amikor egy olyan hivatkozásra kattint, amelyet FreeTube nem tud megnyitni.\nA FreeTube alapértelmezés szerint megnyitja a kattintott hivatkozást az alapértelmezett böngészőben.\n"
@@ -1009,7 +1018,7 @@ Tooltips:
     Fetch Feeds from RSS: Amikor engedélyezve van, a FreeTube az RSS-t fogja használni az alapértelmezett módszer helyett a feliratkozási hírfolyam lekérdezéséhez. Az RSS gyorsabb és megakadályozza az IP-tiltást, de nem tartalmaz bizonyos információkat, például a videó időtartamát, az élő állapotot vagy a bejegyzéseket
     Fetch Automatically: Ha engedélyezve van, a FreeTube automatikusan lekéri a feliratkozási hírcsatornát indításkor, valamint új ablak megnyitásakor.
   Player Settings:
-    Default Video Format: A videóhoz használt formátumok beállítása. A DASH-formátumok magasabb minőségű lejátszást tesznek lehetővé. A régebbi formátumok legfeljebb 360p felbontásúak, de kevesebb sávszélességet igényelnek. A hangformátumok kizárólag hangadatfolyamokat tartalmaznak.
+    Default Media Format: A videóhoz használt formátumok beállítása. A DASH-formátumok magasabb minőségű lejátszást tesznek lehetővé. A régebbi formátumok legfeljebb 360p felbontásúak, de kevesebb sávszélességet igényelnek. A hangformátumok kizárólag hangadatfolyamokat tartalmaznak.
     Proxy Videos Through Invidious: A videók lejátszásához a YouTube helyett az Invidioust használja.
     Scroll Playback Rate Over Video Player: Amíg a kurzor a videó felett van, nyomja meg és tartsa lenyomva a Control billentyűt (Mac számítógépen a Command billentyű), és görgesse az egér görgőjét előre vagy hátra a lejátszási sebesség szabályozásához. Tartsa lenyomva a Control billentyűt (Mac számítógépen a Command billentyű), majd kattintson az egér bal gombjával az alapértelmezett lejátszási sebesség gyors visszatéréséhez (1x, hacsak nem módosították a beállításokban).
     Skip by Scrolling Over Video Player: Használja az egérgörgőt a videóban való előre- és visszaugráshoz, MPV-stílusban.

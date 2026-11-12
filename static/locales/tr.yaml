@@ -198,6 +198,7 @@ User Playlists:
   Export list of URLs: URL'lerin listesini dışa aktar
   Move Video to the Top: Videoyu En Üste Taşı
   Move Video to the Bottom: Videoyu En Alta Taşı
+  This playlist is private or does not exist.: Bu oynatma listesi gizli veya yok.
 History:
   # On History Page
   History: 'Geçmiş'
@@ -384,11 +385,11 @@ Settings:
     Enable Theatre Mode by Default: 'Sinema Modunu Öntanımlı Olarak Etkinleştir'
     Default Volume: 'Öntanımlı Ses Düzeyi'
     Default Playback Rate: 'Öntanımlı Oynatma Hızı'
-    Default Video Format:
-      Default Video Format: 'Öntanımlı Video Biçimi'
+    Default Media Format:
       Dash Formats: 'DASH Biçimleri'
       Legacy Formats: 'Eski Biçimler'
       Audio Formats: 'Ses Biçimleri'
+      Default Media Format: Öntanımlı Medya Biçimi
     Default Quality:
       Default Quality: 'Öntanımlı Kalite'
       Auto: 'Otomatik'
@@ -570,6 +571,7 @@ Settings:
     Hide Subscriptions Posts: Abonelik gönderilerini gizle
     Add: Ekle
     Remove: Kaldır
+    Hide Channel Shows: Kanalın "Programlar" sekmesini gizle
   The app needs to restart for changes to take effect. Restart and apply change?: Değişikliklerin etkili olması için uygulamanın yeniden başlatılması gerekiyor. Yeniden başlatılsın ve değişiklikler uygulansın mı?
   Proxy Settings:
     Error getting network information. Is your proxy configured properly?: Ağ bilgileri alınırken hata oluştu. Vekil sunucunuz doğru yapılandırıldı mı?
@@ -642,6 +644,9 @@ Settings:
   SABR:
     Label: DASH arka ucu olarak SABR etkinleştir
     Tooltip: SABR, gelecek sürümlerde tek DASH arka ucu olacak ve devre dışı bırakılamayacaktır. Bu seçenek, erken uygulamada kurtarılamaz sorunlar olması ihtimaline karşı sunulmaktadır.
+  Search Settings: Ayarlarda Ara
+  Settings found: 1 ayar bulundu | {count} ayar bulundu
+  No Matching Settings: Aramanızla eşleşen ayar bulunamadı.
 About:
   #On About page
   About: 'Hakkında'
@@ -744,6 +749,7 @@ Channel:
     Details: Ayrıntılar
     Joined: Katıldı
     Location: Konum
+    Links: Bağlantılar
   This channel is age-restricted and currently cannot be viewed in FreeTube.: Bu kanal yaş sınırlamasına tabidir ve şu anda FreeTube'da görüntülenememektedir.
   Channel Tabs: Kanal Sekmeleri
   This channel does not allow searching: Bu kanal aramaya izin vermiyor
@@ -774,6 +780,9 @@ Channel:
     Courses: Kurslar
     This channel does not currently have any courses: Bu kanalda şu anda herhangi bir kurs bulunmamaktadır
   View All: Tümünü Görüntüle
+  Shows:
+    Shows: Programlar
+    This channel does not currently have any shows: Bu kanalda şu anda herhangi bir program yok
 Video:
   Mark As Watched: 'İzlendi Olarak İşaretle'
   Remove From History: 'Geçmişten Kaldır'
@@ -875,7 +884,7 @@ Video:
     Skipped segment: '{segmentCategory} bölümü atlandı'
     Autoplay is off: Otomatik Oynat Kapalı
     Autoplay is on: Otomatik Oynat Açık
-  IP block: YouTube, IP adresinizin video izlemesini engelledi. Lütfen farklı bir VPN veya vekil sunucuya geçmeyi deneyin.
+  IP block: YouTube, IP adresinizin videoları izlemesini engelledi, veya bu videoda, YouTube'un oturumu kapalı kullanıcılar için erişimini kısıtladığı, reşit olmayan kişilerin yer aldığı içerik bulunabilir. Eğer bu bir IP engeli ise, farklı bir VPN veya vekil sunucu kullanmayı deneyin.
   Unlisted: Listelenmemiş
   AgeRestricted: Yaş sınırlamalı videolar, Google hesabına giriş ve yaş doğrulaması yapılmış bir YouTube hesabının kullanımını gerektirdiği için FreeTube üzerinden izlenemez.
   MembersOnly: Sadece üyelere özel videolar, Google hesabına giriş ve yükleyicinin kanalına ücretli abonelik gerektirdiği için FreeTube üzerinden izlenemez.
@@ -999,7 +1008,7 @@ Tooltips:
     Fetch Feeds from RSS: Etkinleştirildiğinde, FreeTube abonelik akışınızı almak için varsayılan yöntemi yerine RSS kullanacaktır. RSS daha hızlıdır ve IP engellemesini önler, ancak video süresi, canlı durum veya gönderiler gibi belirli bilgileri sağlamaz
     Fetch Automatically: Etkinleştirildiğinde, FreeTube başlangıçta ve yeni bir pencere açıldığında abonelik beslemenizi otomatik olarak getirecektir.
   Player Settings:
-    Default Video Format: Bir video oynatılırken kullanılan biçimleri ayarlayın. DASH biçimleri daha yüksek kalitelerde oynatabilir. Eski biçimler en fazla 360p ile sınırlıdır ancak daha az bant genişliği kullanır. Ses biçimleri yalnızca ses akışlarıdır.
+    Default Media Format: Bir video oynatılırken kullanılan biçimleri ayarlayın. DASH biçimleri daha yüksek kalitelerde oynatabilir. Eski biçimler en fazla 360p ile sınırlıdır ancak daha az bant genişliği kullanır. Ses biçimleri yalnızca ses akışlarıdır.
     Proxy Videos Through Invidious: Videoları sunmak için YouTube ile doğrudan bağlantı kurmak yerine Invidious'a bağlanılacak.
     Scroll Playback Rate Over Video Player: Oynatma hızını denetlemek için, imleç videonun üzerindeyken Ctrl tuşunu (Mac'te Komut tuşu) basılı tutun ve oynatma hızını denetlemek için fare tekerleğini ileri veya geri kaydırın. Öntanımlı oynatma hızına (ayarlarda değiştirilmediği sürece 1x) hızlı bir şekilde dönmek için Ctrl tuşunu (Mac'te Komut tuşu) basılı tutun ve fareye sol tıklayın.
     Skip by Scrolling Over Video Player: MPV'deki gibi videoda atlamak için kaydırma tekerleğini kullanın.
