@@ -343,6 +343,7 @@ async function doRequest(
             if (!streamProtectionStatus) break
 
             if (streamProtectionStatus.status === 3) {
+              console.warn(`STREAM_PROTECTION_STATUS, status: ${streamProtectionStatus.status}, maxRetries: ${streamProtectionStatus.maxRetries}`)
               invalidPoToken = true
             }
             break
@@ -352,6 +353,7 @@ async function doRequest(
             if (!sabrError) break
 
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
+            console.warn('SABR_ERROR, sabrError: ', sabrError)
             break
           }
           case UMPPartId.SABR_REDIRECT: {
@@ -359,6 +361,7 @@ async function doRequest(
             if (!sabrRedirect?.url) break
 
             currentState.sabrStreamState.sabrUrl = sabrRedirect.url
+            console.warn('SABR_REDIRECT, url: ', sabrRedirect.url)
             shouldRetry = true
             break
           }
@@ -406,6 +409,9 @@ async function doRequest(
             currentState.abrRequest.streamerContext.playbackCookie = nextRequestPolicy?.playbackCookie
 
             currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
+            if (nextRequestPolicy?.backoffTimeMs != null) {
+              console.warn(`NEXT_REQUEST_POLICY, backoffTimeMs: ${nextRequestPolicy?.backoffTimeMs}`)
+            }
             break
           }
           case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
@@ -458,6 +464,7 @@ async function doRequest(
             const reloadPlaybackContext = decodePart(data, ReloadPlaybackContext)
             if (!reloadPlaybackContext) break
 
+            console.warn('RELOAD_PLAYER_RESPONSE')
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
             if (!currentState.abortController.signal.aborted) {
