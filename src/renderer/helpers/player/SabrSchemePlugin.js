@@ -303,7 +303,9 @@ async function doRequest(
   try {
     let shouldReloadDueToBackoffLoop = false
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
-      const currentBackoffTimeMs = currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs
+      console.warn('currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs > 0')
+      const currentBackoffTimeMs = currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs * 2
+      console.warn('currentBackoffTimeMs: ', currentBackoffTimeMs)
       currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentBackoffTimeMs })
       // Wait but can be aborted
       await new Promise((resolve, reject) => {
@@ -315,11 +317,19 @@ async function doRequest(
       // i.e. backoff time parts received will not reset timeout - counted as video loading issue
       currentState.timeoutController?.resetTimeoutOnce()
 
-      currentState.cumulativeBackOffTimeMs += currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs
+      currentState.cumulativeBackOffTimeMs += currentBackoffTimeMs
       currentState.cumulativeBackOffRequested += 1
       const timeoutMs = operationInputs.request.retryParameters.timeout
       // Detect infinite backoff loop by no. of times requested and cumulative time approaching timeout
-      if (currentState.cumulativeBackOffRequested >= 3 || (timeoutMs > 0 && timeoutMs <= (currentState.cumulativeBackOffTimeMs + currentBackoffTimeMs))) {
+      if (currentState.cumulativeBackOffRequested >= 3) {
+        console.warn('shouldReloadDueToBackoffLoop, cumulativeBackOffRequested >= 3')
+        console.warn('cumulativeBackOffRequested: ', currentState.cumulativeBackOffRequested)
+        shouldReloadDueToBackoffLoop = true
+      } else if (timeoutMs > 0 && timeoutMs <= (currentState.cumulativeBackOffTimeMs + currentBackoffTimeMs)) {
+        console.warn('shouldReloadDueToBackoffLoop, operationInputs.request.retryParameters.timeout exceeded')
+        console.warn('operationInputs.request.retryParameters.timeout: ', timeoutMs)
+        console.warn('currentState.cumulativeBackOffTimeMs: ', currentState.cumulativeBackOffTimeMs)
+        console.warn('currentBackoffTimeMs: ', currentBackoffTimeMs)
         shouldReloadDueToBackoffLoop = true
       }
     }
