@@ -303,7 +303,9 @@ async function doRequest(
   try {
     let shouldReloadDueToBackoffLoop = false
     if ((currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs || 0) > 0) {
-      const currentBackoffTimeMs = currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs
+      console.warn('currentState.sabrStreamState.nextRequestPolicy?.backoffTimeMs > 0')
+      const currentBackoffTimeMs = currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs * 2
+      console.warn('currentBackoffTimeMs: ', currentBackoffTimeMs)
       currentState.eventEmitter.emit('backoff-requested', { backoffMs: currentBackoffTimeMs })
       // Wait but can be aborted
       await new Promise((resolve, reject) => {
@@ -315,11 +317,19 @@ async function doRequest(
       // i.e. backoff time parts received will not reset timeout - counted as video loading issue
       currentState.timeoutController?.resetTimeoutOnce()
 
-      currentState.cumulativeBackOffTimeMs += currentState.sabrStreamState.nextRequestPolicy.backoffTimeMs
+      currentState.cumulativeBackOffTimeMs += currentBackoffTimeMs
       currentState.cumulativeBackOffRequested += 1
       const timeoutMs = operationInputs.request.retryParameters.timeout
       // Detect infinite backoff loop by no. of times requested and cumulative time approaching timeout
-      if (currentState.cumulativeBackOffRequested >= 3 || (timeoutMs > 0 && timeoutMs <= (currentState.cumulativeBackOffTimeMs + currentBackoffTimeMs))) {
+      if (currentState.cumulativeBackOffRequested >= 3) {
+        console.warn('shouldReloadDueToBackoffLoop, cumulativeBackOffRequested >= 3')
+        console.warn('cumulativeBackOffRequested: ', currentState.cumulativeBackOffRequested)
+        shouldReloadDueToBackoffLoop = true
+      } else if (timeoutMs > 0 && timeoutMs <= (currentState.cumulativeBackOffTimeMs + currentBackoffTimeMs)) {
+        console.warn('shouldReloadDueToBackoffLoop, operationInputs.request.retryParameters.timeout exceeded')
+        console.warn('operationInputs.request.retryParameters.timeout: ', timeoutMs)
+        console.warn('currentState.cumulativeBackOffTimeMs: ', currentState.cumulativeBackOffTimeMs)
+        console.warn('currentBackoffTimeMs: ', currentBackoffTimeMs)
         shouldReloadDueToBackoffLoop = true
       }
     }
@@ -343,6 +353,7 @@ async function doRequest(
             if (!streamProtectionStatus) break
 
             if (streamProtectionStatus.status === 3) {
+              console.warn(`STREAM_PROTECTION_STATUS, status: ${streamProtectionStatus.status}, maxRetries: ${streamProtectionStatus.maxRetries}`)
               invalidPoToken = true
             }
             break
@@ -352,6 +363,7 @@ async function doRequest(
             if (!sabrError) break
 
             error = `SABR Error: type: ${sabrError.type}, code: ${sabrError.code}`
+            console.warn('SABR_ERROR, sabrError: ', sabrError)
             break
           }
           case UMPPartId.SABR_REDIRECT: {
@@ -359,6 +371,7 @@ async function doRequest(
             if (!sabrRedirect?.url) break
 
             currentState.sabrStreamState.sabrUrl = sabrRedirect.url
+            console.warn('SABR_REDIRECT, url: ', sabrRedirect.url)
             shouldRetry = true
             break
           }
@@ -406,6 +419,9 @@ async function doRequest(
             currentState.abrRequest.streamerContext.playbackCookie = nextRequestPolicy?.playbackCookie
 
             currentState.abrRequest.streamerContext.backoffTimeMs = nextRequestPolicy?.backoffTimeMs
+            if (nextRequestPolicy?.backoffTimeMs != null) {
+              console.warn(`NEXT_REQUEST_POLICY, backoffTimeMs: ${nextRequestPolicy?.backoffTimeMs}`)
+            }
             break
           }
           case UMPPartId.FORMAT_INITIALIZATION_METADATA: {
@@ -458,6 +474,7 @@ async function doRequest(
             const reloadPlaybackContext = decodePart(data, ReloadPlaybackContext)
             if (!reloadPlaybackContext) break
 
+            console.warn('RELOAD_PLAYER_RESPONSE')
             // Whole video cannot be played
             currentState.sabrStreamState.playerReloadRequested = true
             if (!currentState.abortController.signal.aborted) {
